@@ -1,24 +1,41 @@
 {
   "name": "stackconsolev2",
   "version": "1.0.0",
-  "description": "",
+  "description": "Multi-process microservice engine and interactive local service terminal dashboard.",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "electron",
+    "terminal",
+    "laravel",
+    "python",
+    "process-manager",
+    "developer-tools"
+  ],
+  "author": "Sherwin Vizcarra",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "electron": "^42.3.3"
   },
   "build": {
     "appId": "com.stackpilot.console",
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "icon": "stacklogo.ico",
+      "icon": "src/assets/stacklogo.ico",
       "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StackConsole"
     }
   }
 }
