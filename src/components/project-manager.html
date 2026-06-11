@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Manager</title>
+  <link rel="stylesheet" href="../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <h1 id="TitleBarTitle">Project manager</h1>
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div class="split-manager-view">
+      <div class="manager-left-pane">
+        <div class="form-row-split" style="align-items: center;">
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+            <span style="font-size:14px; font-weight:700;">&#9734; Project</span>
+          </div>
+          <select class="dropdown-select" id="ProjectDropdownSelector"></select>
+          <button class="btn-secondary" id="BtnNewProject" style="padding: 6px 12px;">+ New</button>
+        </div>
+
+        <div class="form-group">
+          <label>Base Directory</label>
+          <div class="input-with-action">
+            <input type="text" class="input-field" id="InpBaseDir" value="C:\projects\Smartlab" readonly>
+            <button class="btn-secondary" id="BtnBrowseDirectory">Browse</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="flex: 1;">
+          <label>Commands</label>
+          <div class="stacked-list-box" id="CommandsListBox"></div>
+        </div>
+      </div>
+
+      <div class="manager-right-pane">
+        <button class="action-stack-vertical-btn" id="MgrAddCmd">&#9634; Add</button>
+        <button class="action-stack-vertical-btn" id="MgrEditCmd">&#9634; Edit</button>
+        <button class="action-stack-vertical-btn" id="MgrRemoveCmd">&#9634; Remove</button>
+        <div style="flex: 1;"></div>
+        <button class="btn-primary" id="MgrSaveClose" style="width: 100%;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let dbContext = null;
+    let localSelectedCmdId = null;
+
+    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
+    document.getElementById('MgrSaveClose').addEventListener('click', () => window.api.close());
+    document.getElementById('MgrAddCmd').addEventListener('click', () => window.api.openAddCommand());
+    document.getElementById('MgrEditCmd').addEventListener('click', async () => {
+      if(!dbContext || !localSelectedCmdId) return;
+      dbContext.activeCommandToEdit = localSelectedCmdId;
+      await window.api.setStore(dbContext);
+      window.api.openEditCommand();
+    });
+    
+    document.getElementById('BtnNewProject').addEventListener('click', async () => window.api.newProjectCommand());
+
+    // Select between multiple projects in the selection dropdown
+    document.getElementById('ProjectDropdownSelector').addEventListener('change', async (e) => {
+        dbContext.activeProject = e.target.value;
+        localSelectedCmdId = null;
+        await window.api.setStore(dbContext);
+        renderCommands();
+    })
+
+    document.getElementById('BtnBrowseDirectory').addEventListener('click', async () => {
+        const selectedPath = await window.api.selectDirectory();
+        if (selectedPath) {
+            document.getElementById('InpBaseDir').value = selectedPath;
+
+            const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+            if (current) {
+                current.baseDirectory = selectedPath;
+                await window.api.setStore(dbContext);
+            }
+        }
+    })
+
+
+    async function initManager() {
+      dbContext = await window.api.getStore();
+      renderDropdown();
+      renderCommands();
+    }
+
+    function renderDropdown() {
+      const select = document.getElementById('ProjectDropdownSelector');
+      select.innerHTML = '';
+      dbContext.projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        opt.selected = p.id === dbContext.activeProject;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderCommands() {
+      const box = document.getElementById('CommandsListBox');
+      box.innerHTML = '';
+      const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!current) return;
+
+      document.getElementById('InpBaseDir').value = current.baseDirectory;
+
+      current.commands.forEach(cmd => {
+        const item = document.createElement('div');
+        item.className = `stacked-list-item ${cmd.id === localSelectedCmdId ? 'selected' : ''}`;
+        item.innerHTML = `<div>${cmd.id} (${cmd.displayName})</div>`;
+        
+        item.addEventListener('click', () => {
+          localSelectedCmdId = cmd.id;
+          renderCommands();
+        });
+        box.appendChild(item);
+      });
+    }
+
+    document.getElementById('MgrRemoveCmd').addEventListener('click', async () => {
+      const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (current && localSelectedCmdId) {
+        current.commands = current.commands.filter(c => c.id !== localSelectedCmdId);
+        localSelectedCmdId = null;
+        await window.api.setStore(dbContext);
+      }
+    });
+
+    window.api.onDataUpdate((data) => {
+      dbContext = data;
+      renderDropdown();
+      renderCommands();
+    });
+
+    initManager();
+  </script>
+</body>
+</html>

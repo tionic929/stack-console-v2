@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Command</title>
+  <link rel="stylesheet" href="../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <h1 id="TitleBarTitle">Add New Project</h1>
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>New Project</label>
+        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Create a new project path</span>
+      </div>
+
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" class="input-field" id="InpName" placeholder="e.g. PayrollMS">
+      </div>
+    </div>
+
+    <div class="modal-footer-strip">
+      <button class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button class="btn-primary" id="BtnSave">Save</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
+    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    document.getElementById('BtnSave').addEventListener('click', async () => {
+        const rawName = document.getElementById('InpName').value.trim();
+        if(!rawName) return;
+
+        const db = await window.api.getStore();
+
+        if(!db.projects) {
+            db.projects = [];
+        }
+
+        const systemId = rawName.replace(/\s+/g, '-').toLowerCase();
+
+        if (db.projects.some(p => p.id === systemId)) {
+            alert('A project with this name already exists.');
+            return;
+        }
+
+        const newProjectPayload = {
+            id: systemId,
+            name: rawName,
+            baseDirectory: "",
+            commands: []
+        };
+
+        db.projects.push(newProjectPayload);
+        db.activeProject = systemId;
+
+        const success = await window.api.setStore(db);
+        window.api.close();
+    });
+  </script>
+</body>
+</html>

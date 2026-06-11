@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Command</title>
+  <link rel="stylesheet" href="../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <h1 id="TitleBarTitle">Edit command dialog</h1>
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Edit command</label>
+        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Modify an existing process entry mapping</span>
+      </div>
+
+      <div class="form-group">
+        <label>Command ID</label>
+        <input type="text" class="input-field" id="InpId" readonly style="opacity: 0.6; cursor: not-allowed;">
+      </div>
+
+      <div class="form-group">
+        <label>Display name</label>
+        <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
+      </div>
+
+      <div class="form-group">
+        <label>Command</label>
+        <input type="text" class="input-field" id="InpCmd" placeholder="e.g. php artisan serve">
+      </div>
+
+      <div class="form-group">
+        <label>Working directory <span style="color:var(--slate9);">(optional)</span></label>
+        <input type="text" class="input-field" id="InpDir" placeholder="Relative to project base">
+      </div>
+
+      <div class="form-row-split">
+        <div class="form-group">
+          <label>Port <span style="color:var(--slate9);">(optional)</span></label>
+          <input type="text" class="input-field" id="InpPort" placeholder="8000">
+        </div>
+        <div class="form-group">
+          <label>Startup delay (s)</label>
+          <input type="text" class="input-field" id="InpDelay" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer-strip">
+      <button class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button class="btn-primary" id="BtnApply">Apply</button>
+    </div>
+  </div>
+
+  <script>
+    let dbContext = null;
+    let targetCommandId = null;
+
+    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
+    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    // Load database state context and populate input fields automatically on window startup
+    async function loadCommandData() {
+      dbContext = await window.api.getStore();
+      if (!dbContext) return;
+
+      const currentProj = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!currentProj) return;
+
+      // Assuming your route passing or state architecture sets the target item or context
+      // If your structural selector UI passes this downstream via state parameters:
+      // We read the active structural reference from the global database or a temporary session property
+      targetCommandId = dbContext.activeCommandToEdit || (currentProj.commands[0] ? currentProj.commands[0].id : null);
+      
+      if (!targetCommandId) return;
+
+      const cmdConfig = currentProj.commands.find(c => c.id === targetCommandId);
+      if (cmdConfig) {
+        document.getElementById('InpId').value = cmdConfig.id || '';
+        document.getElementById('InpName').value = cmdConfig.displayName || '';
+        document.getElementById('InpCmd').value = cmdConfig.command || '';
+        document.getElementById('InpDir').value = cmdConfig.workingDirectory || '';
+        document.getElementById('InpPort').value = cmdConfig.port || '';
+        document.getElementById('InpDelay').value = cmdConfig.startupDelay || '0';
+      }
+    }
+
+    document.getElementById('BtnApply').addEventListener('click', async () => {
+      if (!dbContext) dbContext = await window.api.getStore();
+      
+      const currentProj = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (currentProj && targetCommandId) {
+        const cmdConfig = currentProj.commands.find(c => c.id === targetCommandId);
+        
+        if (cmdConfig) {
+          // Mutate properties in place to avoid breaking runtime processes, pids, or log trails
+          cmdConfig.displayName = document.getElementById('InpName').value.trim() || 'Unnamed Command';
+          cmdConfig.command = document.getElementById('InpCmd').value.trim() || '';
+          cmdConfig.workingDirectory = document.getElementById('InpDir').value.trim() || '';
+          cmdConfig.port = document.getElementById('InpPort').value.trim() || '';
+          cmdConfig.startupDelay = document.getElementById('InpDelay').value.trim() || '0';
+          
+          await window.api.setStore(dbContext);
+        }
+      }
+      window.api.close();
+    });
+
+    // Run field population pipeline on ready event execution trigger
+    loadCommandData();
+  </script>
+</body>
+</html>

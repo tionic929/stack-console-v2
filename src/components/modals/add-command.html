@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Command</title>
+  <link rel="stylesheet" href="../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <h1 id="TitleBarTitle">Add command dialog</h1>
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Add command</label>
+        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Create a new process entry mapping</span>
+      </div>
+
+      <div class="form-group">
+        <label>Command ID</label>
+        <input type="text" class="input-field" id="InpId" placeholder="e.g. laravel_server">
+      </div>
+
+      <div class="form-group">
+        <label>Display name</label>
+        <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
+      </div>
+
+      <div class="form-group">
+        <label>Command</label>
+        <input type="text" class="input-field" id="InpCmd" placeholder="e.g. php artisan serve">
+      </div>
+
+      <div class="form-group">
+        <label>Working directory <span style="color:var(--slate9);">(optional)</span></label>
+        <input type="text" class="input-field" id="InpDir" placeholder="Relative to project base">
+      </div>
+
+      <div class="form-row-split">
+        <div class="form-group">
+          <label>Port <span style="color:var(--slate9);">(optional)</span></label>
+          <input type="text" class="input-field" id="InpPort" placeholder="8000">
+        </div>
+        <div class="form-group">
+          <label>Startup delay (s)</label>
+          <input type="text" class="input-field" id="InpDelay" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer-strip">
+      <button class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button class="btn-primary" id="BtnApply">Apply</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
+    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    document.getElementById('BtnApply').addEventListener('click', async () => {
+      const db = await window.api.getStore();
+      const currentProj = db.projects.find(p => p.id === db.activeProject);
+      
+      if (currentProj) {
+        currentProj.commands.push({
+          id: document.getElementById('InpId').value || 'new_cmd',
+          displayName: document.getElementById('InpName').value || 'Unnamed Command',
+          command: document.getElementById('InpCmd').value || '',
+          workingDirectory: document.getElementById('InpDir').value.trim() || '',
+          port: document.getElementById('InpPort').value || '',
+          startupDelay: document.getElementById('InpDelay').value || '0',
+          status: 'offline',
+          pid: null,
+          logs: '<span class="t-gray">Initialized empty logs.</span>'
+        });
+        await window.api.setStore(db);
+      }
+      window.api.close();
+    });
+  </script>
+</body>
+</html>

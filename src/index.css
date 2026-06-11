@@ -1,0 +1,654 @@
+/* ── Design System Tokens (Radix Slate Dark) ────────────────── */
+:root {
+  --slate1: #0B0D0E;
+  --slate2: #111315;
+  --slate3: #151719;
+  --slate4: #1C1E21;
+  --slate5: #222528;
+  --slate6: #282B30;
+  --slate7: #31353A;
+  --slate8: #4E535B;
+  --slate9: #687076;
+  --slate11: #B0B4BA;
+  --slate12: #EEEEF0;
+
+  --indigo3: rgba(62, 99, 221, 0.12);
+  --indigo4: rgba(62, 99, 221, 0.22);
+  --indigo5: rgba(62, 99, 221, 0.35);
+  --indigo8: #3451B2;
+  --indigo9: #3E63DD;
+  --indigo11: #6480EC;
+
+  --jade9: #30A46C;
+  --jade-bg: rgba(48, 164, 108, 0.10);
+  --amber9: #E7BA11;
+  --amber-bg: rgba(231, 186, 17, 0.10);
+  --ruby9: #E5484D;
+  --ruby-bg: rgba(229, 72, 77, 0.10);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: transparent;
+  color: var(--slate12);
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+#AppContainer {
+  background-color: var(--slate1);
+  border: 1px solid var(--slate6);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ── Custom Window Titlebar Chrome ───────────────────────────── */
+#TitleBar {
+  background-color: var(--slate4);
+  border-bottom: 1px solid var(--slate6);
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 16px;
+  -webkit-app-region: drag;
+}
+
+.title-left {
+  display: flex;
+  align-items: left;
+}
+
+#TitleBarLogo {
+  color: var(--slate1);
+  font-weight: 800;
+  font-size: 10px;
+  padding: 2px 5px;
+}
+
+.app-logo-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+#TitleBarTitle {
+  font-size: 12px;
+  color: var(--slate11);
+  font-weight: 500;
+}
+
+#TitleBarTitleAccent {
+  color: var(--slate9);
+  font-weight: 400;
+}
+
+.title-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn {
+  background: transparent;
+  border: 1px solid var(--slate6);
+  color: var(--slate9);
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 30px;
+  transition: all 0.15s ease;
+}
+
+#WinBtnClose {
+  background-color: rgba(245,92,83,1);;
+}
+
+#WinBtnMin {
+  background-color: rgba(40,195,63,1);
+}
+
+#WinBtnMax {
+  background-color: rgba(247,185,37,1);
+}
+
+#WinBtnClose:hover {
+  border-color: var(--ruby9);
+}
+
+#WinBtnMin:hover {
+  border-color: rgba(40,195,63,1);
+}
+
+#WinBtnMax:hover {
+  border-color: rgba(247,185,37,1);
+}
+
+/* ── Main Application Workspace Dashboard ────────────────────── */
+#Workspace {
+  display: flex;
+  flex: 1;
+  height: calc(100% - 40px);
+}
+
+#Sidebar {
+  width: 230px;
+  background-color: var(--slate1);
+  border-right: 1px solid var(--slate6);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-header-logo {
+  width: 32px;
+  height: 32px;
+  background-color: #fff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #000;
+  font-size: 14px;
+}
+
+.sidebar-header-txt-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--slate12);
+}
+
+.sidebar-subtitle {
+  font-size: 11px;
+  color: var(--slate9);
+}
+
+.section-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate9);
+}
+
+.section-link {
+  font-size: 11px;
+  color: var(--indigo11);
+  text-decoration: none;
+}
+
+.svc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.svc-row {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+}
+
+.svc-row:hover {
+  background-color: var(--slate3);
+}
+
+.svc-row.active {
+  background-color: var(--slate3);
+  border-color: var(--slate6);
+}
+
+.svc-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.svc-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  color: #fff;
+}
+
+.svc-title-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.svc-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate12);
+}
+
+.svc-port-sub {
+  font-size: 11px;
+  color: var(--slate9);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.status-dot.running { background-color: var(--jade9); }
+.status-dot.warning { background-color: var(--amber9); }
+.status-dot.offline { background-color: var(--slate8); }
+
+.sidebar-footer {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-action-btn {
+  background-color: transparent;
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+  color: var(--slate11);
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-action-btn:hover {
+  background-color: var(--slate3);
+  color: var(--slate12);
+}
+
+/* ── Main Panel Console Layout ────────────────────────────── */
+#MainPanel {
+  flex: 1;
+  background-color: var(--slate1);
+  display: flex;
+  flex-direction: column;
+}
+
+#MainHeader {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-meta-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+#ServiceName {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+#ServiceMetaPid {
+  font-size: 12px;
+  color: var(--slate9);
+  margin-top: 2px;
+}
+
+#StatusPill {
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+#StatusPill[data-status="running"] { background-color: var(--jade-bg); color: var(--jade9); }
+#StatusPill[data-status="warning"] { background-color: var(--amber-bg); color: var(--amber9); }
+#StatusPill[data-status="offline"] { background-color: var(--slate4); color: var(--slate9); }
+
+.control-action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.action-pill-btn {
+  background-color: var(--slate2);
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+  color: var(--slate12);
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.action-pill-btn:hover { background-color: var(--slate3); }
+
+.view-tab-strip {
+  display: flex;
+  gap: 20px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--slate6);
+}
+
+.view-tab {
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--slate9);
+  cursor: pointer;
+}
+.view-tab.active {
+  color: var(--slate12);
+  border-bottom: 2px solid var(--slate12);
+}
+
+#Terminal {
+  flex: 1;
+  background-color: var(--slate1);
+  padding: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-y: auto;
+  font-family: inherit;
+  white-space: pre-wrap;
+}
+
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#TerminalLogs {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.terminal-input-line {
+  display: flex;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+}
+.terminal-prompt {
+  color: #30A46C;
+  margin-right: 8px;
+  font-weight: bold;
+  user-select: none;
+}
+#TerminalInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.t-green { color: var(--jade9); }
+.t-blue { color: var(--indigo11); }
+.t-gray { color: var(--slate9); }
+
+#MainFooter {
+  height: 40px;
+  border-top: 1px solid var(--slate6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  font-size: 12px;
+  color: var(--slate9);
+}
+
+#ClearLogsBtn {
+  background: transparent;
+  border: none;
+  color: var(--slate9);
+  cursor: pointer;
+  font-family: inherit;
+}
+#ClearLogsBtn:hover { color: var(--slate11); }
+
+/* ── Overlay Modal / Dialog Form Layouts ────────────────── */
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row-split {
+  display: flex;
+  gap: 16px;
+}
+.form-row-split .form-group { flex: 1; }
+
+label {
+  font-size: 11px;
+  color: var(--slate9);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.input-field {
+  background-color: var(--slate3);
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+  color: var(--slate12);
+  padding: 10px 14px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.input-field:focus { border-color: var(--slate8); }
+
+.input-with-action {
+  display: flex;
+  gap: 10px;
+}
+.input-with-action .input-field { flex: 1; }
+
+.modal-footer-strip {
+  padding: 16px 24px;
+  background-color: var(--slate1);
+  border-top: 1px solid var(--slate6);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--slate6);
+  color: var(--slate12);
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-secondary:hover { background-color: var(--slate3); }
+
+.btn-primary {
+  background-color: var(--slate12);
+  border: 1px solid transparent;
+  color: var(--slate1);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary:hover { background-color: #fff; }
+
+/* ── Project Manager Window Matrix Split Layout ────────── */
+.split-manager-view {
+  display: flex;
+  flex: 1;
+  height: calc(100% - 40px);
+}
+
+.manager-left-pane {
+  flex: 1;
+  border-right: 1px solid var(--slate6);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.manager-right-pane {
+  width: 220px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--slate1);
+}
+
+.stacked-list-box {
+  background-color: var(--slate2);
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.stacked-list-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--slate6);
+  color: var(--slate11);
+  cursor: pointer;
+}
+.stacked-list-item:hover { background-color: var(--slate3); }
+.stacked-list-item.selected {
+  background-color: var(--slate3);
+  color: #fff;
+  font-weight: 500;
+}
+
+.action-stack-vertical-btn {
+  background-color: var(--slate2);
+  border: 1px solid var(--slate6);
+  color: var(--slate12);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+}
+.action-stack-vertical-btn:hover { background-color: var(--slate3); }
+
+.dropdown-select {
+  background-color: var(--slate3);
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+  color: var(--slate12);
+  padding: 10px 14px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+
+/* ── Minimal WebKit Custom Scrollbars (Radix UI Style) ── */
+#Terminal::-webkit-scrollbar,
+.svc-list::-webkit-scrollbar,
+.stacked-list-box::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+#Terminal::-webkit-scrollbar-track,
+.svc-list::-webkit-scrollbar-track,
+.stacked-list-box::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#Terminal::-webkit-scrollbar-thumb,
+.svc-list::-webkit-scrollbar-thumb,
+.stacked-list-box::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(238, 238, 240, 0.08); /* Transparent subtle tint matching your var(--slate12) token */
+  border-radius: 10px;
+}
+
+#Terminal::-webkit-scrollbar-thumb:hover,
+.svc-list::-webkit-scrollbar-thumb:hover,
+.stacked-list-box::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(238, 238, 240, 0.18); /* Shifts smoothly on cursor focus highlights */
+}

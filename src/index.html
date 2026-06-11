@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StackPilot Central</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    
+    <header id="TitleBar">
+      <div class="title-left">
+        <img src="assets/logo/stacklogo.ico" alt="StackPilot Logo" class="app-logo-image" id="TitleBarLogo">
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnMin"></button>
+        <button class="win-btn" id="WinBtnMax"></button>
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div id="Workspace">
+      <aside id="Sidebar">
+        <button class="sidebar-header" id="BtnOpenCmd">
+          <img src="assets/logo/stacklogo.ico" alt="StackPilot Logo" class="app-logo-image" id="TitleBarLogo">
+          <div class="sidebar-header-txt-group">
+            <span class="sidebar-title">Command Prompt</span>
+            <span class="sidebar-subtitle">Open in Shell</span>
+          </div>
+        </button>
+
+        <div class="section-container">
+          <span class="section-title">Processes</span>
+          <a href="#" class="section-link" id="ProjectBadgeLink">(...)</a>
+        </div>
+
+        <nav class="svc-list" id="ProcessWrapperList"></nav>
+
+        <div class="sidebar-footer">
+          <button class="menu-action-btn" id="TriggerProjManager"><span style="font-size:10px;">&#9634;</span> Manage projects</button>
+          <button class="menu-action-btn" id="TriggerLaunchAll"><span style="font-size:10px;">&#9634;</span> Launch all</button>
+          <button class="menu-action-btn" id="TriggerStopAll"><span style="font-size:10px;">&#9634;</span> Stop all</button>
+        </div>
+      </aside>
+
+      <main id="MainPanel">
+        <header id="MainHeader">
+          <div class="header-meta-block">
+            <div class="title-stack">
+              <h2 id="ServiceName">--</h2>
+              <div id="ServiceMetaPid">--</div>
+            </div>
+            <div id="StatusPill" data-status="offline">
+              <span id="StatusPillLabel">OFFLINE</span>
+            </div>
+          </div>
+          <div class="control-action-group">
+            <button class="action-pill-btn" id="BtnStop">Stop</button>
+            <button class="action-pill-btn" id="BtnRestart">Restart</button>
+            <button class="action-pill-btn" id="BtnStart">Start</button>
+          </div>
+        </header>
+
+        <div class="view-tab-strip">
+          <div class="view-tab active">Logs</div>
+          <div class="view-tab">Config</div>
+        </div>
+
+        <div id="Terminal" class="terminal-container">
+          <div id="TerminalLogs"></div>
+          <div class="terminal-input-line" id="TerminalInputLine">
+            <span class="terminal-prompt">></span>
+            <input type="text" id="TerminalInput" autocomplete="off" autofocus placeholder="Type a command..." />
+          </div>
+        </div>
+
+        <footer id="MainFooter">
+          <div id="FooterStatusBarSummary">0 running &bull; 0 offline</div>
+          <button id="ClearLogsBtn">Clear logs</button>
+        </footer>
+      </main>
+    </div>
+    
+    <div id="AppCloseConfirmationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: 9999; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif;">
+    <div style="background: #111214; border: 1px solid #282A2F; border-radius: 8px; width: 400px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);">
+      <h3 style="color: #ECEDEE; margin-top: 0; margin-bottom: 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px;">Exit StackConsole V2?</h3>
+      <p style="color: #888D96; font-size: 13px; margin-bottom: 24px; line-height: 1.5;">This will kill all currently running services, terminal instances, and active background stream daemons.</p>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button id="CloseModalBtnCancel" style="background: transparent; border: 1px solid #3c3f44; color: #ECEDEE; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Cancel</button>
+        <button id="CloseModalBtnConfirm" style="background: #E5484D; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Terminate & Exit</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="util/ansi-parser.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
