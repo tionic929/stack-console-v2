@@ -1,6 +1,7 @@
 {
   "name": "stackconsolev2",
-  "version": "1.0.0",
+  "productName": "StackConsole",
+  "version": "1.0.0-beta.1",
   "description": "Multi-process microservice engine and interactive local service terminal dashboard.",
   "main": "main.js",
   "scripts": {
@@ -24,6 +25,7 @@
     "electron-builder": "^26.15.2"
   },
   "build": {
+    "artifactName": "${productName}-v${version}-${arch}.${ext}",
     "appId": "com.stack.console",
     "directories": {
       "output": "release/beta"
