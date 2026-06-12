@@ -1,28 +1,33 @@
 stackconsolev2/
-├── config/                         # System engine configurations
+├── data/
 │   └── projects.json               # Shared workspaces state/database persistence
-├── src/                            # Central Core Source Code Directory
-│   ├── main/                       # Desktop Platform Process (Electron Main)
-│   │   ├── main.js                 # Core engine bootstrapper, window routers & IPC
-│   │   └── preload.js              # Secure isolated contextBridge APIs expose layer
-│   │
-│   ├── services/                   # Heavy-lifting Process Controllers & Workers
-│   │   └── process_streamer.py     # Refactored stream_worker.py (handles active IO)
-│   │
-│   └── renderer/                   # Visual Application Surface Layer (UI Window Contexts)
-│       ├── assets/                 # Shared graphical binary components
-│       │   └── logo.ico            # Core execution branding icon
-│       ├── components/             # Sub-window components/modals
-│       │   ├── add-command.html    
-│       │   ├── add-project.html    
-│       │   ├── edit-command.html   
-│       │   └── project-manager.html
-│       ├── index.html              # Main workspace frame entry point
-│       ├── app.js                  # Refactored renderer.js (UI interactions)
-│       ├── style.css               # Central Radix-styled design systems rulebook
-│       └── utils/                  # Transpilation wrappers and text filters
-│           └── ansi-parser.js      # Shell raw escape sequence parser formatting util
-│
-├── node_modules/                   # Node environment dependency tree
-├── package.json                    # Application metadata manifest
-└── package-lock.json               # System environment dependency lock snapshot
+├── services/
+│   └── stream_worker.py             # Python process IO stream handler
+├── src/
+│   ├── assets/
+│   │   └── logo/
+│   │       ├── stacklogo.ico        # App icon (32x32)
+│   │       └── stacklogo-x256.ico   # App icon (256x256, for installer)
+│   ├── components/
+│   │   ├── modals/
+│   │   │   ├── add-command.html
+│   │   │   ├── add-project.html
+│   │   │   ├── edit-command.html
+│   │   │   └── edit-project-name.html
+│   │   └── project-manager.html
+│   ├── util/
+│   │   ├── ansi-parser.js           # Shell escape sequence parser
+│   │   └── icon-map.js              # SVG icon registry for command avatars
+│   ├── index.css                    # Central design system
+│   ├── index.html                   # Main workspace frame entry point
+│   └── main.js                      # UI interactions and layout renderer
+├── main.js                          # Core engine bootstrapper, window routers & IPC
+├── preload.js                       # Secure contextBridge APIs expose layer
+├── package.json                     # Application metadata manifest
+├── package-lock.json                # Dependency lock snapshot
+├── release/
+│   └── beta/
+│       └── StackConsole-v1.0.0-beta.1-x64.exe
+├── GUIDE.md
+├── LICENSE
+└── README.md
