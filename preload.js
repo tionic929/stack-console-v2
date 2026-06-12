@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   openAddCommand: () => ipcRenderer.send('route-add-command'),
   openEditCommand: () => ipcRenderer.send('route-edit-command'),
   newProjectCommand: () => ipcRenderer.send('route-new-project-command'),
+  editProjectName: () => ipcRenderer.send('route-edit-project-name'),
   openProjectManager: () => ipcRenderer.send('route-project-manager'),
 
   openCommandPrompt: () => ipcRenderer.send('route-command-prompt'),

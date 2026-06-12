@@ -477,6 +477,10 @@ ipcMain.on('route-project-manager', () => {
   projectManagerWindow.on('closed', () => { projectManagerWindow = null; });
 });
 
+ipcMain.on('route-edit-project-name', () => {
+  generateWindowFrame(520, 320, 520, 320, false, 'src/components/modals/edit-project-name.html');
+})
+
 ipcMain.on('route-command-prompt', (event) => {
   const targetId = 'global_shell';
   

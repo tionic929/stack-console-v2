@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rename Project</title>
+  <link rel="stylesheet" href="../../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <h1 id="TitleBarTitle">Edit Project Name</h1>
+      </div>
+      <div class="title-right">
+        <button class="win-btn" id="WinBtnClose"></button>
+      </div>
+    </header>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Rename Project</label>
+        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Modify the structural identity label of this instance</span>
+      </div>
+
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" class="input-field" id="InpProjName" placeholder="e.g. My Awesome App Stack">
+      </div>
+    </div>
+
+    <div class="modal-footer-strip">
+      <button class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button class="btn-primary" id="BtnApply">Apply</button>
+    </div>
+  </div>
+
+  <script>
+    let dbContext = null;
+    let targetProjectRef = null;
+
+    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
+    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    // Load database state context and populate input fields automatically on window startup
+    async function loadProjectData() {
+      dbContext = await window.api.getStore();
+      if (!dbContext || !dbContext.activeProject) return;
+
+      targetProjectRef = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!targetProjectRef) return;
+
+      document.getElementById('InpProjName').value = targetProjectRef.name || '';
+    }
+
+    document.getElementById('BtnApply').addEventListener('click', async () => {
+      if (!dbContext) dbContext = await window.api.getStore();
+      
+      if (dbContext && dbContext.activeProject) {
+        targetProjectRef = dbContext.projects.find(p => p.id === dbContext.activeProject);
+        
+        if (targetProjectRef) {
+          const freshNameInput = document.getElementById('InpProjName').value.trim();
+          
+          // Revert cleanly to a placeholder string fallback if fields are intentionally cleared out
+          targetProjectRef.name = freshNameInput || 'Unnamed Project';
+          
+          await window.api.setStore(dbContext);
+        }
+      }
+      window.api.close();
+    });
+
+    loadProjectData();
+  </script>
+</body>
+</html>

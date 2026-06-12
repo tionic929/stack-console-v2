@@ -45,7 +45,7 @@ function renderSidebarLayout() {
   
   // Handle empty state gracefully without breaking the layout initialization loop
   if (!appState || !appState.projects || appState.projects.length === 0) {
-    document.getElementById('ProjectBadgeLink').textContent = '(None)';
+    document.getElementById('ProjectBadgeLink').textContent = '(No Project Selected)';
     document.getElementById('ServiceName').textContent = '--';
     document.getElementById('TerminalLogs').innerHTML = '<span class="t-gray">No active project found. Open Project Manager to get started.</span>';
     return;
@@ -53,13 +53,13 @@ function renderSidebarLayout() {
 
   const project = appState.projects.find(p => p.id === appState.activeProject);
   if (!project) {
-    document.getElementById('ProjectBadgeLink').textContent = '(None)';
+    document.getElementById('ProjectBadgeLink').textContent = '(No Project Selected)';
     document.getElementById('ServiceName').textContent = '--';
     document.getElementById('TerminalLogs').innerHTML = '<span class="t-gray">No active project found. Open Project Manager to get started.</span>';
     return;
   }
 
-  document.getElementById('ProjectBadgeLink').textContent = `(${project.name})`;
+  document.getElementById('ProjectBadgeLink').textContent = `${project.name}`;
 
   // Guard against uninitialized commands array
   const commands = project.commands || [];

@@ -169,9 +169,12 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 0.5px solid rgba(134, 134, 134, 0.12);
+  font-family: "JetBrains Mono", "SF Mono", monospace;
 }
 .sidebar-header:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .sidebar-header-logo {
@@ -219,9 +222,10 @@ body {
 }
 
 .section-link {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--indigo11);
   text-decoration: none;
+  font-weight: bold;
 }
 
 .svc-list {
@@ -632,6 +636,21 @@ label {
   background-color: var(--slate1);
 }
 
+.manager-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--slate6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--slate1);
+}
+
+.cmd-action-divider {
+  border: none;
+  border-top: 1px solid var(--slate6);
+  margin: 4px 0;
+}
+
 .stacked-list-box {
   background-color: var(--slate2);
   border: 1px solid var(--slate6);
@@ -641,6 +660,9 @@ label {
 }
 
 .stacked-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 12px 14px;
   border-bottom: 1px solid var(--slate6);
   color: var(--slate11);

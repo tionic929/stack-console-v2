@@ -5,58 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Manager</title>
   <link rel="stylesheet" href="../index.css">
+  <script src="../util/icon-map.js"></script>
 </head>
 <body>
   <div id="AppContainer">
+    <!-- ── HEADER ── -->
     <header id="TitleBar">
       <div class="title-left">
         <h1 id="TitleBarTitle">Project manager</h1>
       </div>
       <div class="title-right">
-        <button class="win-btn" id="WinBtnClose"></button>
+        <button class="win-btn" id="WinBtnClose" style="margin-left: auto;"></button>
       </div>
     </header>
 
     <div class="split-manager-view">
+      <!-- ── LEFT COLUMN ── -->
       <div class="manager-left-pane">
+
+        <label>Project</label>
+
         <div class="form-row-split" style="align-items: center;">
-          <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
-            <span style="font-size:14px; font-weight:700;">&#9734; Project</span>
-          </div>
           <select class="dropdown-select" id="ProjectDropdownSelector"></select>
+          <button class="btn-secondary" id="BtnEditProjectName" style="padding: 6px 10px;" title="Rename Active Project">Edit</button>
           <button class="btn-secondary" id="BtnNewProject" style="padding: 6px 12px;">+ New</button>
+          <button class="btn-secondary" id="BtnDeleteProject" style="padding: 6px 10px; color: #E5484D;" title="Delete Active Project">Delete</button>
         </div>
 
-        <div class="form-group">
-          <label>Base Directory</label>
-          <div class="input-with-action">
-            <input type="text" class="input-field" id="InpBaseDir" value="C:\projects\Smartlab" readonly>
-            <button class="btn-secondary" id="BtnBrowseDirectory">Browse</button>
-          </div>
+        <div class="input-with-action">
+          <input type="text" class="input-field" id="InpBaseDir" value="C:\projects\Smartlab" readonly>
+          <button class="btn-secondary" id="BtnBrowseDirectory">Browse</button>
         </div>
 
         <div class="form-group" style="flex: 1;">
-          <label>Commands</label>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label>Commands</label>
+            <span id="ProjectStats" style="font-size: 11px; color: var(--slate9);"></span>
+          </div>
           <div class="stacked-list-box" id="CommandsListBox"></div>
         </div>
+
       </div>
 
+      <!-- ── RIGHT COLUMN ── -->
       <div class="manager-right-pane">
-        <button class="action-stack-vertical-btn" id="MgrAddCmd">&#9634; Add</button>
-        <button class="action-stack-vertical-btn" id="MgrEditCmd">&#9634; Edit</button>
-        <button class="action-stack-vertical-btn" id="MgrRemoveCmd">&#9634; Remove</button>
-        <div style="flex: 1;"></div>
-        <button class="btn-primary" id="MgrSaveClose" style="width: 100%;">Save</button>
-      </div>
+        <label>Command</label>
+        <button class="action-stack-vertical-btn" id="MgrAddCmd">+ Add Command</button>
+
+        <hr class="cmd-action-divider">
+
+        <label>Selected command</label>
+        <button class="action-stack-vertical-btn" id="MgrEditCmd">Edit</button>
+        <button class="action-stack-vertical-btn" id="MgrStartCmd">Start</button>
+        <button class="action-stack-vertical-btn" id="MgrDupCmd">Duplicate</button>
+
+        <hr class="cmd-action-divider">
+
+        <button class="action-stack-vertical-btn" id="MgrRemoveCmd" style="color: #E5484D;">Remove</button>
+
     </div>
   </div>
+
+  <!-- ── FOOTER ── -->
+  <div class="manager-footer">
+    <span id="FooterHint" style="font-size: 11px; color: var(--slate9);"></span>
+    <button class="btn-primary" id="MgrCloseWindow">Close</button>
+  </div>
+</div>
 
   <script>
     let dbContext = null;
     let localSelectedCmdId = null;
 
     document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
-    document.getElementById('MgrSaveClose').addEventListener('click', () => window.api.close());
+    document.getElementById('MgrCloseWindow').addEventListener('click', () => window.api.close());
     document.getElementById('MgrAddCmd').addEventListener('click', () => window.api.openAddCommand());
     document.getElementById('MgrEditCmd').addEventListener('click', async () => {
       if(!dbContext || !localSelectedCmdId) return;
@@ -64,8 +86,30 @@
       await window.api.setStore(dbContext);
       window.api.openEditCommand();
     });
-    
+
+    document.getElementById('MgrStartCmd').addEventListener('click', async () => {
+      if (!dbContext || !localSelectedCmdId) return;
+      window.api.startCommand(localSelectedCmdId);
+    });
+
     document.getElementById('BtnNewProject').addEventListener('click', async () => window.api.newProjectCommand());
+
+    document.getElementById('BtnEditProjectName').addEventListener('click', async () => {
+      if(!dbContext || !dbContext.activeProject) return;
+      await window.api.setStore(dbContext);
+      window.api.editProjectName();
+    })
+
+    document.getElementById('BtnDeleteProject').addEventListener('click', async () => {
+      if (!dbContext || !dbContext.activeProject) return;
+      const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!current) return;
+      if (!confirm(`Delete project "${current.name}" and all its commands?`)) return;
+      dbContext.projects = dbContext.projects.filter(p => p.id !== dbContext.activeProject);
+      dbContext.activeProject = dbContext.projects.length > 0 ? dbContext.projects[0].id : '';
+      localSelectedCmdId = null;
+      await window.api.setStore(dbContext);
+    });
 
     // Select between multiple projects in the selection dropdown
     document.getElementById('ProjectDropdownSelector').addEventListener('change', async (e) => {
@@ -73,6 +117,7 @@
         localSelectedCmdId = null;
         await window.api.setStore(dbContext);
         renderCommands();
+        renderStats();
     })
 
     document.getElementById('BtnBrowseDirectory').addEventListener('click', async () => {
@@ -88,11 +133,29 @@
         }
     })
 
+    document.getElementById('MgrDupCmd').addEventListener('click', async () => {
+      if (!dbContext || !localSelectedCmdId) return;
+      const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!current) return;
+      const source = current.commands.find(c => c.id === localSelectedCmdId);
+      if (!source) return;
+      const duplicate = JSON.parse(JSON.stringify(source));
+      duplicate.id = source.id + '-copy';
+      duplicate.displayName = source.displayName + ' (copy)';
+      duplicate.status = 'offline';
+      duplicate.pid = null;
+      duplicate.logs = '';
+      current.commands.push(duplicate);
+      localSelectedCmdId = duplicate.id;
+      await window.api.setStore(dbContext);
+    });
 
     async function initManager() {
       dbContext = await window.api.getStore();
       renderDropdown();
       renderCommands();
+      renderStats();
+      updateFooterHint();
     }
 
     function renderDropdown() {
@@ -118,29 +181,76 @@
       current.commands.forEach(cmd => {
         const item = document.createElement('div');
         item.className = `stacked-list-item ${cmd.id === localSelectedCmdId ? 'selected' : ''}`;
-        item.innerHTML = `<div>${cmd.id} (${cmd.displayName})</div>`;
-        
+
+        let avatarHtml = '';
+        if (cmd.icon && window.iconMap && window.iconMap.getIcon(cmd.icon)) {
+          avatarHtml = `<div class="svc-avatar svc-avatar-icon">${window.iconMap.getIcon(cmd.icon)}</div>`;
+        } else {
+          const words = cmd.displayName.split(' ');
+          const shortCode = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : cmd.displayName.substring(0, 2).toUpperCase();
+          avatarHtml = `<div class="svc-avatar" style="background-color: var(--slate6);">${shortCode}</div>`;
+        }
+
+        const status = cmd.status || 'offline';
+        item.innerHTML = `
+          <div class="svc-meta-left">
+            ${avatarHtml}
+            <div class="svc-title-stack">
+              <span class="svc-name">${cmd.displayName}</span>
+              <span class="svc-port-sub">:${cmd.port || '80'}</span>
+            </div>
+          </div>
+          <div>
+            <span class="status-dot ${status}"></span>
+          </div>`;
+
         item.addEventListener('click', () => {
           localSelectedCmdId = cmd.id;
           renderCommands();
+          updateFooterHint();
         });
         box.appendChild(item);
       });
     }
 
+    function renderStats() {
+      const el = document.getElementById('ProjectStats');
+      const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
+      if (!current || !current.commands) { el.textContent = ''; return; }
+      const cmds = current.commands;
+      const running = cmds.filter(c => c.status === 'running').length;
+      const offline = cmds.filter(c => c.status === 'offline').length;
+      el.textContent = `${cmds.length} total  ·  ${running} running  ·  ${offline} offline`;
+    }
+
+    function updateFooterHint() {
+      const el = document.getElementById('FooterHint');
+      if (localSelectedCmdId) {
+        const current = dbContext?.projects?.find(p => p.id === dbContext.activeProject);
+        const cmd = current?.commands?.find(c => c.id === localSelectedCmdId);
+        el.textContent = cmd ? `Selected: ${cmd.displayName}` : '';
+      } else {
+        el.textContent = 'Select a command to manage it';
+      }
+    }
+
     document.getElementById('MgrRemoveCmd').addEventListener('click', async () => {
       const current = dbContext.projects.find(p => p.id === dbContext.activeProject);
-      if (current && localSelectedCmdId) {
-        current.commands = current.commands.filter(c => c.id !== localSelectedCmdId);
-        localSelectedCmdId = null;
-        await window.api.setStore(dbContext);
-      }
+      const target = current?.commands.find(c => c.id === localSelectedCmdId);
+      if (!current || !target) return;
+      if (!confirm(`Remove command "${target.displayName}"?`)) return;
+      current.commands = current.commands.filter(c => c.id !== localSelectedCmdId);
+      localSelectedCmdId = null;
+      await window.api.setStore(dbContext);
+      updateFooterHint();
     });
 
     window.api.onDataUpdate((data) => {
       dbContext = data;
       renderDropdown();
       renderCommands();
+      renderStats();
+      updateFooterHint();
     });
 
     initManager();

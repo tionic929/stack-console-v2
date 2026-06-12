@@ -24,12 +24,18 @@
     "electron-builder": "^26.15.2"
   },
   "build": {
-    "appId": "com.stackpilot.console",
+    "appId": "com.stack.console",
     "directories": {
-      "output": "release"
+      "output": "release/beta"
     },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "src/**/*",
+      "services/**/*"
+    ],
     "asarUnpack": ["services/**"],
-
     "win": {
       "icon": "src/assets/logo/stacklogo-x256.ico",
       "target": "nsis"
@@ -42,4 +48,5 @@
       "shortcutName": "StackConsole"
     }
   }
+  
 }
