@@ -3,7 +3,6 @@ let currentSelectedCmdId = null;
 
 document.getElementById('WinBtnMin').addEventListener('click', () => window.api.minimize());
 document.getElementById('WinBtnMax').addEventListener('click', () => window.api.maximize());
-document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
 
 document.getElementById('TriggerProjManager').addEventListener('click', () => window.api.openProjectManager());
 document.getElementById('TriggerLaunchAll').addEventListener('click', () => window.api.launchAll());
@@ -23,14 +22,34 @@ document.getElementById('BtnRestart').addEventListener('click', () => {
 });
 
 async function initializeConsole() {
+  // Pull database store configurations over the safe asynchronous bridge
   appState = await window.api.getStore();
+  
+  // Pre-select the first command of the active project if available on application startup
+  if (appState && appState.projects) {
+    const project = appState.projects.find(p => p.id === appState.activeProject);
+    if (project && project.commands && project.commands.length > 0) {
+      currentSelectedCmdId = project.commands[0].id;
+    }
+  }
+
+  // Force render only after the database state is cleanly assigned to memory variables
   renderSidebarLayout();
 }
 
 function renderSidebarLayout() {
   const container = document.getElementById('ProcessWrapperList');
+  if (!container) return;
+  
   container.innerHTML = '';
-  if (!appState || !appState.projects) return;
+  
+  // Handle empty state gracefully without breaking the layout initialization loop
+  if (!appState || !appState.projects || appState.projects.length === 0) {
+    document.getElementById('ProjectBadgeLink').textContent = '(None)';
+    document.getElementById('ServiceName').textContent = '--';
+    document.getElementById('TerminalLogs').innerHTML = '<span class="t-gray">No active project found. Open Project Manager to get started.</span>';
+    return;
+  }
 
   const project = appState.projects.find(p => p.id === appState.activeProject);
   if (!project) {
@@ -42,24 +61,32 @@ function renderSidebarLayout() {
 
   document.getElementById('ProjectBadgeLink').textContent = `(${project.name})`;
 
-  project.commands.forEach((cmd, idx) => {
+  // Guard against uninitialized commands array
+  const commands = project.commands || [];
+
+  commands.forEach((cmd, idx) => {
     if (!currentSelectedCmdId && idx === 0) currentSelectedCmdId = cmd.id;
 
     const row = document.createElement('button');
     row.className = `svc-row ${cmd.id === currentSelectedCmdId ? 'active' : ''}`;
     
-    const words = cmd.displayName.split(' ');
-    const shortCode = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : cmd.displayName.substring(0, 2).toUpperCase();
-
-    let avatarBg = 'var(--slate6)';
-    if (cmd.displayName.includes('Laravel')) avatarBg = '#E5484D';
-    else if (cmd.displayName.includes('Queue')) avatarBg = '#E7BA11';
-    else if (cmd.displayName.includes('Vite')) avatarBg = '#6E56CF';
-    else if (cmd.displayName.includes('Ngrok')) avatarBg = '#30A46C';
+    let avatarHtml = '';
+    if (cmd.icon && window.iconMap && window.iconMap.getIcon(cmd.icon)) {
+      avatarHtml = `<div class="svc-avatar svc-avatar-icon">${window.iconMap.getIcon(cmd.icon)}</div>`;
+    } else {
+      const words = cmd.displayName.split(' ');
+      const shortCode = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : cmd.displayName.substring(0, 2).toUpperCase();
+      let avatarBg = 'var(--slate6)';
+      if (cmd.displayName.includes('Laravel')) avatarBg = '#E5484D';
+      else if (cmd.displayName.includes('Queue')) avatarBg = '#E7BA11';
+      else if (cmd.displayName.includes('Vite')) avatarBg = '#6E56CF';
+      else if (cmd.displayName.includes('Ngrok')) avatarBg = '#30A46C';
+      avatarHtml = `<div class="svc-avatar" style="background-color: ${avatarBg};">${shortCode}</div>`;
+    }
 
     row.innerHTML = `
       <div class="svc-meta-left">
-        <div class="svc-avatar" style="background-color: ${avatarBg};">${shortCode}</div>
+        ${avatarHtml}
         <div class="svc-title-stack">
           <span class="svc-name">${cmd.displayName}</span>
           <span class="svc-port-sub">:${cmd.port || '80'}</span>
@@ -79,7 +106,6 @@ function renderSidebarLayout() {
   if (currentSelectedCmdId !== null){
     renderActiveConsole();
   } else {
-    // Show terminal input line when viewing the Global Command Prompt
     const inputLineContainer = document.getElementById('TerminalInputLine');
     if (inputLineContainer) inputLineContainer.style.display = 'flex';
   }
@@ -87,7 +113,6 @@ function renderSidebarLayout() {
 }
 
 function renderActiveConsole() {
-  // Hide terminal input line for all standard non-interactive command outputs
   const inputLineContainer = document.getElementById('TerminalInputLine');
   if (inputLineContainer) inputLineContainer.style.display = 'none';
 
@@ -106,26 +131,31 @@ function renderActiveConsole() {
   document.getElementById('ServiceMetaPid').textContent = cmd.pid ? `:${cmd.port || '80'} — pid ${cmd.pid}` : `:${cmd.port || '80'} — inactive`;
   
   const statusPill = document.getElementById('StatusPill');
-  statusPill.setAttribute('data-status', cmd.status);
-  document.getElementById('StatusPillLabel').textContent = cmd.status.toUpperCase();
+  if (statusPill) {
+    statusPill.setAttribute('data-status', cmd.status);
+    document.getElementById('StatusPillLabel').textContent = cmd.status.toUpperCase();
+  }
 
   document.getElementById('TerminalLogs').innerHTML = cmd.logs ? window.ansiParser.ansiToHtml(cmd.logs) : '<span class="t-gray">Console initialized. Waiting for runtime metrics...</span>';
   
   const term = document.getElementById('Terminal');
-  term.scrollTop = term.scrollHeight;
+  if (term) term.scrollTop = term.scrollHeight;
 }
 
 function renderFooterSummary(project) {
-  const running = project.commands.filter(c => c.status === 'running').length;
-  const starting = project.commands.filter(c => c.status === 'warning').length;
-  const offline = project.commands.filter(c => c.status === 'offline').length;
+  const commands = project.commands || [];
+  const running = commands.filter(c => c.status === 'running').length;
+  const starting = commands.filter(c => c.status === 'warning').length;
+  const offline = commands.filter(c => c.status === 'offline').length;
   
-  document.getElementById('FooterStatusBarSummary').innerHTML = 
-    `${running} running &nbsp; ${starting} starting &nbsp;&bull;&nbsp; ${offline} offline`;
+  const footerSummary = document.getElementById('FooterStatusBarSummary');
+  if (footerSummary) {
+    footerSummary.innerHTML = `${running} running &nbsp; ${starting} starting &nbsp;&bull;&nbsp; ${offline} offline`;
+  }
 }
 
 document.getElementById('BtnOpenCmd').addEventListener('click', () => {
-  currentSelectedCmdId = null; // Unset process context to focus the global shell layout
+  currentSelectedCmdId = null;
   
   document.querySelectorAll('.svc-row').forEach(row => row.classList.remove('active'));
   
@@ -133,12 +163,13 @@ document.getElementById('BtnOpenCmd').addEventListener('click', () => {
   document.getElementById('ServiceMetaPid').textContent = 'Interactive shell environment';
   
   const statusPill = document.getElementById('StatusPill');
-  statusPill.setAttribute('data-status', 'running');
-  document.getElementById('StatusPillLabel').textContent = 'SHELL';
+  if (statusPill) {
+    statusPill.setAttribute('data-status', 'running');
+    document.getElementById('StatusPillLabel').textContent = 'SHELL';
+  }
   
   document.getElementById('TerminalLogs').innerHTML = '';  
   
-  // Explicitly enable terminal input display line for the Global Command Prompt link
   const inputLineContainer = document.getElementById('TerminalInputLine');
   if (inputLineContainer) inputLineContainer.style.display = 'flex';
 
@@ -148,34 +179,36 @@ document.getElementById('BtnOpenCmd').addEventListener('click', () => {
 const terminalInput = document.getElementById('TerminalInput');
 const terminalContainer = document.getElementById('Terminal');
 
-terminalContainer.addEventListener('click', () => {
-  // Redirect focus only if on the global interactive prompt view shell
-  if (currentSelectedCmdId === null && terminalInput) {
-    terminalInput.focus();
-  }
-});
+if (terminalContainer) {
+  terminalContainer.addEventListener('click', () => {
+    if (currentSelectedCmdId === null && terminalInput) {
+      terminalInput.focus();
+    }
+  });
+}
 
-terminalInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    // Safety lock: Absolutely do nothing if looking at process logs
-    if (currentSelectedCmdId !== null) return;
+if (terminalInput) {
+  terminalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (currentSelectedCmdId !== null) return;
 
-    const rawCommand = terminalInput.value.trim();
-    if (!rawCommand) return;
+      const rawCommand = terminalInput.value.trim();
+      if (!rawCommand) return;
 
-    const project = appState?.projects?.find(p => p.id === appState.activeProject);
-    document.getElementById('TerminalLogs').insertAdjacentHTML('beforeend', `\n<span style="color: #30A46C;">$ ${rawCommand}</span>\n`);
-    
-    window.api.sendTerminalInput({
-      projectId: project?.id || null,
-      commandId: null, // Always targeted to global worker standard inputs
-      text: rawCommand
-    });
+      const project = appState?.projects?.find(p => p.id === appState.activeProject);
+      document.getElementById('TerminalLogs').insertAdjacentHTML('beforeend', `\n<span style="color: #30A46C;">$ ${rawCommand}</span>\n`);
+      
+      window.api.sendTerminalInput({
+        projectId: project?.id || null,
+        commandId: null,
+        text: rawCommand
+      });
 
-    terminalInput.value = '';
-    terminalContainer.scrollTop = terminalContainer.scrollHeight;
-  }
-});
+      terminalInput.value = '';
+      if (terminalContainer) terminalContainer.scrollTop = terminalContainer.scrollHeight;
+    }
+  });
+}
 
 document.getElementById('ClearLogsBtn').addEventListener('click', () => {
   if (currentSelectedCmdId === null) {
@@ -195,6 +228,7 @@ window.api.onTerminalLog((payload) => {
   if (payload.commandId === null && currentSelectedCmdId === null) {
     const term = document.getElementById('Terminal');
     const logsContainer = document.getElementById('TerminalLogs');
+    if (!term || !logsContainer) return;
     const shouldScroll = term.scrollTop + term.clientHeight >= term.scrollHeight - 50;
     
     logsContainer.insertAdjacentHTML('beforeend', window.ansiParser.ansiToHtml(payload.text));
@@ -214,6 +248,7 @@ window.api.onTerminalLog((payload) => {
     if (payload.commandId === currentSelectedCmdId) {
       const term = document.getElementById('Terminal');
       const logsContainer = document.getElementById('TerminalLogs');
+      if (!term || !logsContainer) return;
       const shouldScroll = term.scrollTop + term.clientHeight >= term.scrollHeight - 50;
       
       logsContainer.insertAdjacentHTML('beforeend', window.ansiParser.ansiToHtml(payload.text));
@@ -229,4 +264,49 @@ window.api.onDataUpdate((updatedData) => {
   renderSidebarLayout();
 });
 
-initializeConsole();
+// --- Confirmation Exit Modal Handlers ---
+const openExitModal = document.getElementById('AppCloseConfirmationModal');
+const confirmExitBtn = document.getElementById('CloseModalBtnConfirm');
+const closeExitBtn = document.getElementById('CloseModalBtnCancel');
+const minimizeToTray = document.getElementById('CloseModalBtnMinimize');
+
+// opening func for the modal confirmation for exiting
+document.getElementById('WinBtnClose').addEventListener('click', () => {
+  if (openExitModal) {
+    openExitModal.style.display = 'flex';
+  }
+});
+
+if (minimizeToTray) {
+  minimizeToTray.addEventListener('click', () => {
+    if (openExitModal) {
+      openExitModal.style.display = 'none';
+    }
+    window.api.minimizeToTray();
+  })
+}
+
+// cancel button inside openExitModal
+if (closeExitBtn) {
+  closeExitBtn.addEventListener('click', () => {
+    if (openExitModal) {
+      openExitModal.style.display = 'none';
+    }
+  })
+}
+
+// for executing exit app
+if (confirmExitBtn) {
+  confirmExitBtn.addEventListener('click', () => {
+    window.api.confirmAppExit();
+  });
+}
+
+// Fixed Lifecycle Bootstrap: Verifies document parser completion before calling initialization loops
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeConsole();
+  });
+} else {
+  initializeConsole();
+}

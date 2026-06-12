@@ -10,3 +10,14 @@ data/projects.json
 
 .DS_Store
 Thumbs.db
+
+release/
+dist/
+build-out/
+*.asar
+
+# Build artifacts
+*.exe
+*.exe.blockmap
+latest.yml
+builder-debug.yml

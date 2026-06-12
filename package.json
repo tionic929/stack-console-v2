@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder"
   },
   "keywords": [
     "electron",
@@ -19,15 +20,18 @@
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
-    "electron": "^42.3.3"
+    "electron": "^42.3.3",
+    "electron-builder": "^26.15.2"
   },
   "build": {
     "appId": "com.stackpilot.console",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
+    "asarUnpack": ["services/**"],
+
     "win": {
-      "icon": "src/assets/stacklogo.ico",
+      "icon": "src/assets/logo/stacklogo-x256.ico",
       "target": "nsis"
     },
     "nsis": {

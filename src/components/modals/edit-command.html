@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit Command</title>
-  <link rel="stylesheet" href="../index.css">
+  <link rel="stylesheet" href="../../index.css">
 </head>
 <body>
   <div id="AppContainer">
@@ -31,6 +31,12 @@
       <div class="form-group">
         <label>Display name</label>
         <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
+      </div>
+
+      <div class="form-group">
+        <label>Icon</label>
+        <div class="icon-picker" id="IconPicker"></div>
+        <input type="hidden" id="InpIcon" value="">
       </div>
 
       <div class="form-group">
@@ -61,12 +67,45 @@
     </div>
   </div>
 
+  <script src="../../util/icon-map.js"></script>
   <script>
     let dbContext = null;
     let targetCommandId = null;
 
     document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
     document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    // Populate icon picker
+    const iconPicker = document.getElementById('IconPicker');
+    const inpIcon = document.getElementById('InpIcon');
+    const allIcons = window.iconMap.getAllIcons();
+
+    // Add "None" option
+    const noneBtn = document.createElement('button');
+    noneBtn.type = 'button';
+    noneBtn.className = 'icon-picker-item';
+    noneBtn.title = 'No icon (text fallback)';
+    noneBtn.innerHTML = '<span style="font-size:10px;color:var(--slate9);">--</span>';
+    noneBtn.addEventListener('click', () => {
+      document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
+      noneBtn.classList.add('selected');
+      inpIcon.value = '';
+    });
+    iconPicker.appendChild(noneBtn);
+
+    allIcons.forEach(icon => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'icon-picker-item';
+      btn.title = icon.label;
+      btn.innerHTML = icon.svg;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        inpIcon.value = icon.key;
+      });
+      iconPicker.appendChild(btn);
+    });
 
     // Load database state context and populate input fields automatically on window startup
     async function loadCommandData() {
@@ -76,9 +115,6 @@
       const currentProj = dbContext.projects.find(p => p.id === dbContext.activeProject);
       if (!currentProj) return;
 
-      // Assuming your route passing or state architecture sets the target item or context
-      // If your structural selector UI passes this downstream via state parameters:
-      // We read the active structural reference from the global database or a temporary session property
       targetCommandId = dbContext.activeCommandToEdit || (currentProj.commands[0] ? currentProj.commands[0].id : null);
       
       if (!targetCommandId) return;
@@ -91,6 +127,20 @@
         document.getElementById('InpDir').value = cmdConfig.workingDirectory || '';
         document.getElementById('InpPort').value = cmdConfig.port || '';
         document.getElementById('InpDelay').value = cmdConfig.startupDelay || '0';
+
+        // Pre-select current icon
+        if (cmdConfig.icon) {
+          inpIcon.value = cmdConfig.icon;
+          const items = iconPicker.querySelectorAll('.icon-picker-item');
+          items.forEach(item => {
+            if (item.title === window.iconMap.getIconLabel(cmdConfig.icon)) {
+              noneBtn.classList.remove('selected');
+              item.classList.add('selected');
+            }
+          });
+        } else {
+          noneBtn.classList.add('selected');
+        }
       }
     }
 
@@ -102,8 +152,8 @@
         const cmdConfig = currentProj.commands.find(c => c.id === targetCommandId);
         
         if (cmdConfig) {
-          // Mutate properties in place to avoid breaking runtime processes, pids, or log trails
           cmdConfig.displayName = document.getElementById('InpName').value.trim() || 'Unnamed Command';
+          cmdConfig.icon = inpIcon.value || null;
           cmdConfig.command = document.getElementById('InpCmd').value.trim() || '';
           cmdConfig.workingDirectory = document.getElementById('InpDir').value.trim() || '';
           cmdConfig.port = document.getElementById('InpPort').value.trim() || '';
@@ -115,7 +165,6 @@
       window.api.close();
     });
 
-    // Run field population pipeline on ready event execution trigger
     loadCommandData();
   </script>
 </body>

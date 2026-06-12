@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  minimize: () => ipcRenderer.send('win-minimize'),
+  minimize: () => ipcRenderer.send('minimize-to-tray'),
   maximize: () => ipcRenderer.send('win-maximize'),
   close: () => ipcRenderer.send('win-close'),
   
@@ -29,5 +29,6 @@ contextBridge.exposeInMainWorld('api', {
   onTerminalLog: (callback) => ipcRenderer.on('terminal-log', (event, payload) => callback(payload)),
 
   onRequestCloseConfirmation: (callback) => ipcRenderer.on('request-close-confirmation', () => callback()),
-  confirmAppExit: () => ipcRenderer.invoke('confirm-app-exit')
+  confirmAppExit: () => ipcRenderer.send('confirm-app-exit'),
+  minimizeToTray: () => ipcRenderer.send('minimize-to-tray')
 });

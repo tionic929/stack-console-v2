@@ -40,7 +40,6 @@ body {
   font-size: 13px;
   height: 100vh;
   overflow: hidden;
-  user-select: none;
 }
 
 #AppContainer {
@@ -67,6 +66,7 @@ body {
 .title-left {
   display: flex;
   align-items: left;
+  justify-content: center;
 }
 
 #TitleBarLogo {
@@ -84,6 +84,9 @@ body {
 }
 
 #TitleBarTitle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 12px;
   color: var(--slate11);
   font-weight: 500;
@@ -270,6 +273,59 @@ body {
   color: #fff;
 }
 
+.svc-avatar-icon {
+  background: var(--slate6);
+  color: var(--slate12);
+  padding: 5px;
+}
+
+.svc-avatar-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Icon Picker Grid (used in Add/Edit Command modals) */
+.icon-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--slate2);
+  border: 1px solid var(--slate6);
+  border-radius: 6px;
+}
+
+.icon-picker-item {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--slate11);
+  padding: 6px;
+}
+
+.icon-picker-item:hover {
+  background: var(--slate4);
+}
+
+.icon-picker-item.selected {
+  border-color: var(--indigo9);
+  background: var(--indigo3);
+  color: var(--slate12);
+}
+
+.icon-picker-item svg {
+  width: 20px;
+  height: 20px;
+}
+
 .svc-title-stack {
   display: flex;
   flex-direction: column;
@@ -435,7 +491,6 @@ body {
   color: #30A46C;
   margin-right: 8px;
   font-weight: bold;
-  user-select: none;
 }
 #TerminalInput {
   flex: 1;
@@ -626,7 +681,8 @@ label {
 #Terminal::-webkit-scrollbar,
 .svc-list::-webkit-scrollbar,
 .stacked-list-box::-webkit-scrollbar,
-.modal-body::-webkit-scrollbar {
+.modal-body::-webkit-scrollbar,
+.icon-picker::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
@@ -634,21 +690,24 @@ label {
 #Terminal::-webkit-scrollbar-track,
 .svc-list::-webkit-scrollbar-track,
 .stacked-list-box::-webkit-scrollbar-track,
-.modal-body::-webkit-scrollbar-track {
+.modal-body::-webkit-scrollbar-track,
+.icon-picker::-webkit-scrollbar-track {
   background: transparent;
 }
 
 #Terminal::-webkit-scrollbar-thumb,
 .svc-list::-webkit-scrollbar-thumb,
 .stacked-list-box::-webkit-scrollbar-thumb,
-.modal-body::-webkit-scrollbar-thumb {
-  background: rgba(238, 238, 240, 0.08); /* Transparent subtle tint matching your var(--slate12) token */
+.modal-body::-webkit-scrollbar-thumb,
+.icon-picker::-webkit-scrollbar-thumb {
+  background: rgba(238, 238, 240, 0.08);
   border-radius: 10px;
 }
 
 #Terminal::-webkit-scrollbar-thumb:hover,
 .svc-list::-webkit-scrollbar-thumb:hover,
 .stacked-list-box::-webkit-scrollbar-thumb:hover,
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(238, 238, 240, 0.18); /* Shifts smoothly on cursor focus highlights */
+.modal-body::-webkit-scrollbar-thumb:hover,
+.icon-picker::-webkit-scrollbar-thumb:hover {
+  background: rgba(238, 238, 240, 0.18);
 }

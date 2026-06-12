@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Command</title>
-  <link rel="stylesheet" href="../index.css">
+  <link rel="stylesheet" href="../../index.css">
 </head>
 <body>
   <div id="AppContainer">
@@ -31,6 +31,12 @@
       <div class="form-group">
         <label>Display name</label>
         <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
+      </div>
+
+      <div class="form-group">
+        <label>Icon</label>
+        <div class="icon-picker" id="IconPicker"></div>
+        <input type="hidden" id="InpIcon" value="">
       </div>
 
       <div class="form-group">
@@ -61,9 +67,43 @@
     </div>
   </div>
 
+  <script src="../../util/icon-map.js"></script>
   <script>
     document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
     document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
+
+    // Populate icon picker
+    const iconPicker = document.getElementById('IconPicker');
+    const inpIcon = document.getElementById('InpIcon');
+    const allIcons = window.iconMap.getAllIcons();
+
+    // Add "None" option
+    const noneBtn = document.createElement('button');
+    noneBtn.type = 'button';
+    noneBtn.className = 'icon-picker-item';
+    noneBtn.title = 'No icon (text fallback)';
+    noneBtn.innerHTML = '<span style="font-size:10px;color:var(--slate9);">--</span>';
+    noneBtn.addEventListener('click', () => {
+      document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
+      noneBtn.classList.add('selected');
+      inpIcon.value = '';
+    });
+    noneBtn.classList.add('selected');
+    iconPicker.appendChild(noneBtn);
+
+    allIcons.forEach(icon => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'icon-picker-item';
+      btn.title = icon.label;
+      btn.innerHTML = icon.svg;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        inpIcon.value = icon.key;
+      });
+      iconPicker.appendChild(btn);
+    });
 
     document.getElementById('BtnApply').addEventListener('click', async () => {
       const db = await window.api.getStore();
@@ -73,13 +113,14 @@
         currentProj.commands.push({
           id: document.getElementById('InpId').value || 'new_cmd',
           displayName: document.getElementById('InpName').value || 'Unnamed Command',
+          icon: inpIcon.value || null,
           command: document.getElementById('InpCmd').value || '',
           workingDirectory: document.getElementById('InpDir').value.trim() || '',
           port: document.getElementById('InpPort').value || '',
           startupDelay: document.getElementById('InpDelay').value || '0',
           status: 'offline',
           pid: null,
-          logs: '<span class="t-gray">Initialized empty logs.</span>'
+          logs: ''
         });
         await window.api.setStore(db);
       }

@@ -12,6 +12,7 @@
     <header id="TitleBar">
       <div class="title-left">
         <img src="assets/logo/stacklogo.ico" alt="StackPilot Logo" class="app-logo-image" id="TitleBarLogo">
+        <span id="TitleBarTitle">stackconsole2</span>
       </div>
       <div class="title-right">
         <button class="win-btn" id="WinBtnMin"></button>
@@ -64,7 +65,6 @@
 
         <div class="view-tab-strip">
           <div class="view-tab active">Logs</div>
-          <div class="view-tab">Config</div>
         </div>
 
         <div id="Terminal" class="terminal-container">
@@ -87,6 +87,7 @@
       <h3 style="color: #ECEDEE; margin-top: 0; margin-bottom: 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px;">Exit StackConsole V2?</h3>
       <p style="color: #888D96; font-size: 13px; margin-bottom: 24px; line-height: 1.5;">This will kill all currently running services, terminal instances, and active background stream daemons.</p>
       <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button id="CloseModalBtnMinimize" class="btn-secondary">Minimize to Tray</button>
         <button id="CloseModalBtnCancel" style="background: transparent; border: 1px solid #3c3f44; color: #ECEDEE; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Cancel</button>
         <button id="CloseModalBtnConfirm" style="background: #E5484D; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Terminate & Exit</button>
       </div>
@@ -95,6 +96,7 @@
   </div>
 
   <script src="util/ansi-parser.js"></script>
+  <script src="util/icon-map.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
