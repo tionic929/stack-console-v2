@@ -33,7 +33,7 @@ StackConsole is a desktop dashboard for developers who need to run and monitor m
 
 ### Install
 
-Download the latest installer from the [Releases page](https://github.com/tionic929/stackconsolev2/releases) and run it. Python 3.x must be on your system PATH.
+Download the latest installer from the [Releases page](https://github.com/tionic929/stack-console-v2/releases) and run it. Python 3.x must be on your system PATH.
 
 ### First Run
 
