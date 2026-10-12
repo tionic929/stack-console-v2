@@ -1,0 +1,69 @@
+{
+  "name": "stackconsolev2",
+  "aliases": [],
+  "stage": 1,
+  "stack": {
+    "platform": "electron",
+    "framework": "electron (vanilla JS renderer)",
+    "bundler": null,
+    "typescript": false,
+    "styling": [],
+    "packageManager": "npm",
+    "reactNative": null
+  },
+  "commands": {
+    "dev": "npm run start",
+    "lint": null,
+    "typecheck": null,
+    "test": "npm run test"
+  },
+  "devUrl": null,
+  "paths": {
+    "components": "src/components",
+    "pages": null,
+    "tokens": [
+      "src/tokens.css",
+      "video/src/theme.ts"
+    ],
+    "vault": "obsidian",
+    "architecture": "obsidian/Architecture.md"
+  },
+  "figma": [],
+  "viewports": {
+    "min": "900x560",
+    "default": "1100x700",
+    "note": "Electron desktop window; smallest supported = minWidth/minHeight in main.js"
+  },
+  "checks": {
+    "rawValueCheck": true,
+    "tokenFiles": [
+      "src/tokens.css",
+      "video/src/theme.ts"
+    ]
+  },
+  "createdBy": "design-engine",
+  "created": "2026-10-04",
+  "patterns": [
+    "crud",
+    "forms",
+    "lists",
+    "derived-values",
+    "flows",
+    "time",
+    "editor",
+    "desktop-ipc"
+  ],
+  "patternsDetected": {
+    "at": "2026-10-05",
+    "evidence": {
+      "crud": "22 code hits",
+      "forms": "5 code hits",
+      "lists": "4 code hits",
+      "derived-values": "18 code hits",
+      "flows": "6 code hits",
+      "time": "5 code hits",
+      "editor": "40 code hits",
+      "desktop-ipc": "deps: electron · 58 code hits"
+    }
+  }
+}

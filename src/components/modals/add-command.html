@@ -2,130 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add Command</title>
+  <title>Add command</title>
   <link rel="stylesheet" href="../../index.css">
 </head>
 <body>
   <div id="AppContainer">
     <header id="TitleBar">
       <div class="title-left">
-        <h1 id="TitleBarTitle">Add command dialog</h1>
+        <span id="TitleBarTitle">Add command</span>
       </div>
       <div class="title-right">
-        <button class="win-btn" id="WinBtnClose"></button>
+        <button type="button" class="win-btn" id="WinBtnClose" aria-label="Close" title="Close"></button>
       </div>
     </header>
 
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Add command</label>
-        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Create a new process entry mapping</span>
-      </div>
-
-      <div class="form-group">
-        <label>Command ID</label>
-        <input type="text" class="input-field" id="InpId" placeholder="e.g. laravel_server">
-      </div>
-
-      <div class="form-group">
-        <label>Display name</label>
-        <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
-      </div>
-
-      <div class="form-group">
-        <label>Icon</label>
-        <div class="icon-picker" id="IconPicker"></div>
-        <input type="hidden" id="InpIcon" value="">
-      </div>
-
-      <div class="form-group">
-        <label>Command</label>
-        <input type="text" class="input-field" id="InpCmd" placeholder="e.g. php artisan serve">
-      </div>
-
-      <div class="form-group">
-        <label>Working directory <span style="color:var(--slate9);">(optional)</span></label>
-        <input type="text" class="input-field" id="InpDir" placeholder="Relative to project base">
-      </div>
-
-      <div class="form-row-split">
-        <div class="form-group">
-          <label>Port <span style="color:var(--slate9);">(optional)</span></label>
-          <input type="text" class="input-field" id="InpPort" placeholder="8000">
-        </div>
-        <div class="form-group">
-          <label>Startup delay (s)</label>
-          <input type="text" class="input-field" id="InpDelay" value="0">
-        </div>
-      </div>
-    </div>
+    <form class="modal-body" id="CommandForm" novalidate>
+      <h1 class="sr-only">Add command</h1>
+      <p class="modal-intro">Add a process to this project. It shows up in the sidebar, ready to start.</p>
+    </form>
 
     <div class="modal-footer-strip">
-      <button class="btn-secondary" id="BtnCancel">Cancel</button>
-      <button class="btn-primary" id="BtnApply">Apply</button>
+      <button type="button" class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="BtnApply">Add command</button>
     </div>
   </div>
 
   <script src="../../util/icon-map.js"></script>
-  <script>
-    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
-    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
-
-    // Populate icon picker
-    const iconPicker = document.getElementById('IconPicker');
-    const inpIcon = document.getElementById('InpIcon');
-    const allIcons = window.iconMap.getAllIcons();
-
-    // Add "None" option
-    const noneBtn = document.createElement('button');
-    noneBtn.type = 'button';
-    noneBtn.className = 'icon-picker-item';
-    noneBtn.title = 'No icon (text fallback)';
-    noneBtn.innerHTML = '<span style="font-size:10px;color:var(--slate9);">--</span>';
-    noneBtn.addEventListener('click', () => {
-      document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
-      noneBtn.classList.add('selected');
-      inpIcon.value = '';
-    });
-    noneBtn.classList.add('selected');
-    iconPicker.appendChild(noneBtn);
-
-    allIcons.forEach(icon => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'icon-picker-item';
-      btn.title = icon.label;
-      btn.innerHTML = icon.svg;
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        inpIcon.value = icon.key;
-      });
-      iconPicker.appendChild(btn);
-    });
-
-    document.getElementById('BtnApply').addEventListener('click', async () => {
-      const db = await window.api.getStore();
-      const currentProj = db.projects.find(p => p.id === db.activeProject);
-      
-      if (currentProj) {
-        currentProj.commands.push({
-          id: document.getElementById('InpId').value || 'new_cmd',
-          displayName: document.getElementById('InpName').value || 'Unnamed Command',
-          icon: inpIcon.value || null,
-          command: document.getElementById('InpCmd').value || '',
-          workingDirectory: document.getElementById('InpDir').value.trim() || '',
-          port: document.getElementById('InpPort').value || '',
-          startupDelay: document.getElementById('InpDelay').value || '0',
-          status: 'offline',
-          pid: null,
-          logs: ''
-        });
-        await window.api.setStore(db);
-      }
-      window.api.close();
-    });
-  </script>
+  <script src="../../util/ui.js"></script>
+  <script src="../../util/command-form.js"></script>
+  <script src="add-command.js"></script>
 </body>
 </html>

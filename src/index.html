@@ -2,100 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StackConsole</title>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <div id="AppContainer">
-    
+
     <header id="TitleBar">
       <div class="title-left">
-        <img src="assets/logo/stacklogo.ico" alt="StackConsole Logo" class="app-logo-image" id="TitleBarLogo">
-        <span id="TitleBarTitle">stackconsolev2</span>
+        <img src="assets/logo/stacklogo.ico" alt="" class="app-logo-image">
+        <span id="TitleBarTitle">StackConsole</span>
       </div>
       <div class="title-right">
-        <button class="win-btn" id="WinBtnMin"></button>
-        <button class="win-btn" id="WinBtnMax"></button>
-        <button class="win-btn" id="WinBtnClose"></button>
+        <button type="button" class="win-btn" id="WinBtnMin" aria-label="Minimize" title="Minimize"></button>
+        <button type="button" class="win-btn" id="WinBtnMax" aria-label="Maximize" title="Maximize"></button>
+        <button type="button" class="win-btn" id="WinBtnClose" aria-label="Close" title="Close"></button>
       </div>
     </header>
 
     <div id="Workspace">
-      <aside id="Sidebar">
-        <button class="sidebar-header" id="BtnOpenCmd">
-          <img src="assets/logo/stacklogo.ico" alt="StackConsole Logo" class="app-logo-image" id="TitleBarLogo">
-          <div class="sidebar-header-txt-group">
-            <span class="sidebar-title">Open Command Prompt</span>
-            <span class="sidebar-subtitle">Open in Shell</span>
-          </div>
-        </button>
-
-        <div class="section-container">
-          <a href="#" class="section-link" id="ProjectBadgeLink">...</a>
+      <aside id="Sidebar" aria-label="Services">
+        <nav class="rail-nav" id="SidebarRail" aria-label="Projects"></nav>
+        <div class="sidebar-section tree-head-row">
+          <span class="section-title" id="ProjectsHeading">Projects</span>
+          <span class="tree-head-actions">
+            <button type="button" class="tree-act" id="BtnRootsMenu" aria-haspopup="menu" aria-expanded="false" aria-label="Projects folders" title="Projects folders"></button>
+            <button type="button" class="tree-act" id="BtnNewProject" aria-label="New project" title="New project"></button>
+          </span>
         </div>
+        <section class="run-strip" id="RunningStrip" aria-label="Running now" hidden></section>
+        <nav class="tree" id="ProcessWrapperList" aria-labelledby="ProjectsHeading"></nav>
 
-        <nav class="svc-list" id="ProcessWrapperList"></nav>
+        <div class="sidebar-tools">
+          <button type="button" class="svc-row" id="BtnOpenCmd">
+            <span class="svc-avatar" id="ShellAvatar" aria-hidden="true"></span>
+            <span class="svc-title-stack">
+              <span class="svc-name">Shell</span>
+              <span class="svc-port-sub">Run one-off commands</span>
+            </span>
+          </button>
+        </div>
 
         <div class="sidebar-footer">
-          <button class="menu-action-btn" id="TriggerProjManager"><span style="font-size:10px;">&#9634;</span> Manage projects</button>
-          <button class="menu-action-btn" id="TriggerLaunchAll"><span style="font-size:10px;">&#9634;</span> Launch all</button>
-          <button class="menu-action-btn" id="TriggerStopAll"><span style="font-size:10px;">&#9634;</span> Stop all</button>
+          <button type="button" class="btn-danger btn-sm btn-block" id="TriggerStopAll"></button>
+          <button type="button" class="btn-ghost btn-sm btn-block" id="TriggerProjManager"></button>
         </div>
       </aside>
+      <div class="sash v" id="SashSidebar"></div>
 
       <main id="MainPanel">
+        <div class="id-band" id="IdBand" hidden></div>
         <header id="MainHeader">
           <div class="header-meta-block">
-            <div class="title-stack">
-              <h2 id="ServiceName">--</h2>
-              <div id="ServiceMetaPid">--</div>
+            <div class="title-row">
+              <h1 id="ServiceName">—</h1>
+              <span id="StatusPill" data-status="offline" role="status">
+                <span class="status-ind" data-status="offline" aria-hidden="true"></span>
+                <span id="StatusPillLabel">Stopped</span>
+              </span>
             </div>
-            <div id="StatusPill" data-status="offline">
-              <span id="StatusPillLabel">OFFLINE</span>
-            </div>
+            <div id="ServiceMeta"></div>
           </div>
           <div class="control-action-group">
-            <button class="action-pill-btn" id="BtnStop">Stop</button>
-            <button class="action-pill-btn" id="BtnRestart">Restart</button>
-            <button class="action-pill-btn" id="BtnStart">Start</button>
+            <button type="button" class="btn-primary" id="BtnStart"></button>
+            <button type="button" class="btn-primary" id="BtnStartNow" hidden></button>
+            <button type="button" class="btn-secondary" id="BtnRestart"></button>
+            <button type="button" class="btn-danger" id="BtnStop"></button>
+            <button type="button" class="tree-act" id="BtnServiceMore" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for this service" title="Folder actions, edit"></button>
           </div>
         </header>
+        <div class="sash h is-edge" id="SashHeader"></div>
 
-        <div class="view-tab-strip">
-          <div class="view-tab active">Logs</div>
+        <div class="state-banner" id="StateBanner" role="status" hidden>
+          <span class="banner-text" id="StateBannerText"></span>
+          <span class="banner-actions" id="StateBannerActions"></span>
         </div>
 
-        <div id="Terminal" class="terminal-container">
-          <div id="TerminalLogs"></div>
-          <div class="terminal-input-line" id="TerminalInputLine">
-            <span class="terminal-prompt">></span>
-            <input type="text" id="TerminalInput" autocomplete="off" autofocus placeholder="Type a command..." />
+        <div class="log-toolbar" id="LogToolbar" role="toolbar" aria-label="Output tools">
+          <h2 class="sr-only" id="LogTitle">Output</h2>
+          <label class="find-field" for="FindInput">
+            <span id="FindIcon" aria-hidden="true"></span>
+            <span class="sr-only">Filter output</span>
+            <input type="text" id="FindInput" placeholder="Filter output…  Ctrl+F" spellcheck="false" autocomplete="off">
+            <span class="find-count" id="FindCount" aria-live="polite"></span>
+          </label>
+          <div class="tool-group" id="FindNav" hidden>
+            <button type="button" class="icon-btn" id="FindPrev" aria-label="Previous match (Shift+Enter)" title="Previous match (Shift+Enter)"></button>
+            <button type="button" class="icon-btn" id="FindNext" aria-label="Next match (Enter)" title="Next match (Enter)"></button>
+            <button type="button" class="icon-btn" id="FindOnly" aria-pressed="false" title="Show only matching lines">Only matches</button>
+          </div>
+          <div class="tool-group" role="group" aria-label="Show levels">
+            <button type="button" class="level-chip" data-level="all" aria-pressed="true" id="LevelAll">All</button>
+            <button type="button" class="level-chip" data-level="warn" aria-pressed="false" id="LevelWarn">Warnings</button>
+            <button type="button" class="level-chip" data-level="error" aria-pressed="false" id="LevelError">Errors</button>
+          </div>
+          <div class="tool-group">
+            <button type="button" class="icon-btn" id="ToggleTimestamps" aria-pressed="false" aria-label="Show timestamps" title="Show timestamps"></button>
+            <button type="button" class="icon-btn" id="CopyLogsBtn" aria-label="Copy visible output" title="Copy visible output"></button>
+            <button type="button" class="icon-btn" id="ClearLogsBtn">Clear</button>
           </div>
         </div>
 
+        <div class="log-split" id="LogSplit">
+        <div class="log-col" id="LogColA">
+        <div class="pane-title" id="PaneTitleA" hidden></div>
+        <div class="log-pane" id="LogPane">
+          <div id="Terminal" tabindex="0" role="log" aria-labelledby="LogTitle" aria-live="off">
+            <div id="TerminalLogs"></div>
+          </div>
+          <button type="button" class="jump-latest" id="JumpLatestBtn" hidden></button>
+          <div class="terminal-input-line" id="TerminalInputLine" hidden>
+            <span class="terminal-prompt" aria-hidden="true">&gt;</span>
+            <label for="TerminalInput" class="sr-only">Shell command</label>
+            <input type="text" id="TerminalInput" autocomplete="off" spellcheck="false" placeholder="Type a command and press Enter" />
+          </div>
+        </div>
+        </div>
+        <div class="sash v" id="SashSplit" hidden></div>
+        <div class="log-col" id="LogColB" hidden>
+          <div class="pane-title" id="PaneTitleB"></div>
+          <div class="log-pane">
+            <div class="term" id="TerminalB" tabindex="0" role="log" aria-labelledby="PaneNameB" aria-live="off">
+              <div class="log-lines" id="TerminalLogsB"></div>
+            </div>
+            <button type="button" class="jump-latest" id="JumpLatestB" hidden></button>
+          </div>
+        </div>
+        <div class="drop-hint" id="DropHint" hidden><span>Drop to open beside</span></div>
+        </div>
+
+        <section class="empty-state" id="EmptyState" hidden>
+          <h2 id="EmptyTitle"></h2>
+          <p id="EmptyBody"></p>
+          <div class="inline-row" style="justify-content: center;">
+            <button type="button" class="btn-primary" id="EmptyAction"></button>
+            <button type="button" class="btn-secondary" id="EmptySecondary" hidden></button>
+          </div>
+        </section>
+
+        <div class="sash h is-edge" id="SashPanel"></div>
+        <section class="stack-panel" id="StackPanel" aria-labelledby="StackTitle" hidden>
+          <div class="sp-head"><span id="StackTitle">Running and crashed across projects</span><span class="sp-count" id="StackCount"></span></div>
+          <div class="stack-list" id="StackList"></div>
+        </section>
+
         <footer id="MainFooter">
-          <div id="FooterStatusBarSummary">0 running &bull; 0 offline</div>
-          <button id="ClearLogsBtn">Clear logs</button>
+          <div id="FooterStatusBarSummary" aria-live="polite"></div>
+          <button type="button" class="footer-toggle" id="BtnStackPanel" aria-expanded="false" aria-controls="StackPanel" title="Everything running (Ctrl+J)"></button>
         </footer>
       </main>
     </div>
-    
-    <div id="AppCloseConfirmationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: 9999; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif;">
-    <div style="background: #111214; border: 1px solid #282A2F; border-radius: 8px; width: 400px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);">
-      <h3 style="color: #ECEDEE; margin-top: 0; margin-bottom: 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px;">Exit StackConsole V2?</h3>
-      <p style="color: #888D96; font-size: 13px; margin-bottom: 24px; line-height: 1.5;">This will kill all currently running services, terminal instances, and active background stream daemons.</p>
-      <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button id="CloseModalBtnMinimize" class="btn-secondary">Minimize to Tray</button>
-        <button id="CloseModalBtnCancel" style="background: transparent; border: 1px solid #3c3f44; color: #ECEDEE; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Cancel</button>
-        <button id="CloseModalBtnConfirm" style="background: #E5484D; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">Terminate & Exit</button>
-      </div>
-    </div>
-
   </div>
 
   <script src="util/ansi-parser.js"></script>
   <script src="util/icon-map.js"></script>
+  <script src="util/ui.js"></script>
+  <script src="util/identity.js"></script>
+  <script src="util/layout.js"></script>
+  <script src="util/log-view.js"></script>
+  <script src="util/log-find.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

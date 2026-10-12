@@ -21,3 +21,10 @@ build-out/
 *.exe.blockmap
 latest.yml
 builder-debug.yml
+
+# Video project
+video/
+# Bundled Python (downloaded by npm run fetch-python)
+vendor/
+
+obsidian/

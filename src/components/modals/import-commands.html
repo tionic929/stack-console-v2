@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import commands</title>
+  <link rel="stylesheet" href="../../index.css">
+</head>
+<body>
+  <div id="AppContainer">
+    <header id="TitleBar">
+      <div class="title-left">
+        <span id="TitleBarTitle">Import commands</span>
+      </div>
+      <div class="title-right">
+        <button type="button" class="win-btn" id="WinBtnClose" aria-label="Close" title="Close"></button>
+      </div>
+    </header>
+
+    <div class="modal-body">
+      <h1 class="sr-only">Import commands</h1>
+      <p class="modal-intro" id="ImportIntro">Looking for commands…</p>
+      <p class="field-hint hint-warn" id="ImportSkipped" role="note" hidden></p>
+      <div class="stacked-list-box" id="ImportList" role="group" aria-labelledby="ImportIntro" hidden></div>
+    </div>
+
+    <div class="modal-footer-strip">
+      <button type="button" class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="BtnImport" disabled>Import</button>
+    </div>
+  </div>
+
+  <script src="../../util/icon-map.js"></script>
+  <script src="../../util/ui.js"></script>
+  <script src="import-commands.js"></script>
+</body>
+</html>

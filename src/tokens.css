@@ -1,0 +1,180 @@
+/* ── StackConsole design tokens ───────────────────────────────
+   The only place raw values live. Components use var(--…) only.
+   Colors: Radix Slate (dark) + status hues. */
+:root {
+  /* Neutrals */
+  --slate1: #0B0D0E;
+  --slate2: #111315;
+  --slate3: #151719;
+  --slate4: #1C1E21;
+  --slate5: #222528;
+  --slate6: #282B30;
+  --slate7: #31353A;
+  --slate8: #4E535B;
+  --slate9: #687076;   /* decorative only (borders, placeholders); fails text contrast */
+  --slate10: #8B9198;  /* muted text: ≈6:1 on slate1 */
+  --slate11: #B0B4BA;
+  --slate12: #EEEEF0;
+  --white: #FFFFFF;
+
+  /* Accent */
+  --indigo3: rgba(62, 99, 221, 0.12);
+  --indigo5: rgba(62, 99, 221, 0.35);
+  --indigo9: #3E63DD;
+  --indigo11: #849DFF;
+
+  /* Status */
+  --jade9: #30A46C;
+  --jade-bg: rgba(48, 164, 108, 0.12);
+  --amber9: #E7BA11;
+  --amber-bg: rgba(231, 186, 17, 0.12);
+  --ruby9: #E5484D;
+  --ruby11: #FF6369;
+  --ruby-bg: rgba(229, 72, 77, 0.12);
+
+  /* ANSI palette for log output */
+  --ansi-black: #1A1D1E;
+  --ansi-blue: #0091FF;
+  --ansi-purple: #9E3EED;
+  --ansi-cyan: #00A2C6;
+  --ansi-dim: #8B9198;
+
+  /* macOS-style window controls (the app's own look; colours follow macOS meaning) */
+  --mac-close: #FF5F57;
+  --mac-min: #FEBC2E;
+  --mac-max: #28C840;
+  --mac-dot-ring: inset 0 0 0 0.5px rgba(0, 0, 0, 0.22);
+  --mac-glyph: rgba(0, 0, 0, 0.6);
+  --size-mac-dot: 12px;
+  --size-mac-hit: 24px;
+
+  /* Waiting (start order): indigo, deliberately not a status hue */
+  --waiting: #849DFF;
+
+  /* Project identity (Radix Colors 3.0 dark scales: step 11 mark / step 3 tint / step 9 solid).
+     Never a status hue (jade, amber, ruby) or the indigo of waiting and focus; contrast ≥ 4.5:1 in every position.
+     Plum and Bronze/Gold were left out: too close to Purple and Brown to tell apart (OKLab ΔE ≤ 4). */
+  --id-purple: #D19DFF;
+  --id-purple-soft: #301C3B;
+  --id-purple-solid: #8E4EC6;
+  --id-pink: #FF8DCC;
+  --id-pink-soft: #37172F;
+  --id-pink-solid: #D6409F;
+  --id-cyan: #4CCCE6;
+  --id-cyan-soft: #082C36;
+  --id-cyan-solid: #00A2C7;
+  --id-brown: #DBB594;
+  --id-brown-soft: #28211D;
+  --id-brown-solid: #AD7F58;
+  --id-sand: #B5B3AD;
+  --id-sand-soft: #222221;
+  --id-sand-solid: #6F6D66;
+  --id-ring: 26%;                /* tile edge: mark colour mixed into transparent */
+
+  /* Log find: match highlight and the current match */
+  --find-match: rgba(231, 186, 17, 0.28);
+  --find-current: rgba(231, 186, 17, 0.6);
+
+  /* Surfaces & effects */
+  --win-close-hover: #C42B1C;
+  --backdrop: rgba(0, 0, 0, 0.7);
+  --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 10px 30px rgba(0, 0, 0, 0.65);
+  --scrollbar-thumb: rgba(238, 238, 240, 0.12);
+  --scrollbar-thumb-hover: rgba(238, 238, 240, 0.24);
+
+  /* Typography: UI face for interface text, mono for logs, commands, ports, pids */
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Mono", "JetBrains Mono", Consolas, "SF Mono", monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-mono: 12.5px;
+  --text-base: 13px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+
+  /* Spacing (named by pixel value) */
+  --sp-2: 2px;
+  --sp-3: 3px;
+  --sp-4: 4px;
+  --sp-5: 5px;
+  --sp-6: 6px;
+  --sp-7: 7px;
+  --sp-8: 8px;
+  --sp-9: 9px;
+  --sp-10: 10px;
+  --sp-12: 12px;
+  --sp-14: 14px;
+  --sp-16: 16px;
+  --sp-20: 20px;
+  --sp-24: 24px;
+  --sp-30: 30px;
+  --sp-32: 32px;
+
+  /* Borders & radii */
+  --border-strong: 2px;
+  --border-mid: 1.5px;
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 20px;
+  --focus-ring: 0 0 0 2px var(--slate1), 0 0 0 4px var(--indigo11);
+  --focus-ring-inset: inset 0 0 0 2px var(--indigo11);
+
+  /* Component sizes */
+  --size-status: 8px;
+  --size-icon-xs: 10px;
+  --size-icon: 14px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 18px;
+  --size-avatar: 28px;
+  --size-icon-cell: 34px;
+  --size-caption-btn: 46px;
+  --titlebar-h: 32px;
+  --toolbar-h: 36px;
+  --footer-h: 36px;
+  --sidebar-w: 240px;
+  --manager-aside-w: 220px;
+  --dialog-w: 420px;
+  --find-w: 420px;
+  --popup-w: 230px;
+  --branch-max-w: 120px;
+  --empty-text-w: 360px;
+  --dialog-list-max-h: 40vh;
+
+  /* Identity tiles (same look at every size) */
+  --tile-sm: 16px;
+  --tile: 20px;
+  --tile-md: 28px;
+  --tile-mark-sm: 10px;
+  --tile-mark: 12px;
+  --tile-rail: 3px;
+  --tile-text: 9px;               /* letters inside a 20px tile */
+  --tile-text-sm: 8px;
+  --radius-tile-sm: 4px;
+  --picker-w: 360px;
+  --picker-cell: 36px;
+  --swatch: 24px;
+  --swatch-hit: 32px;
+  --letters-w: 56px;
+
+  /* Workbench: resizable regions (sizes are per viewer; these are the limits) */
+  --rail-w: 56px;
+  --sidebar-min: 200px;
+  --sidebar-full: 400px;          /* from here rows show full names, folders and branches */
+  --sidebar-max: 480px;
+  --log-min: 480px;               /* the log always keeps this much width */
+  --pane-min: 320px;              /* each of two side-by-side logs */
+  --log-min-h: 160px;             /* the log keeps this much height when the panel opens */
+  --header-slim-h: 48px;
+  --footer-panel-min: 72px;       /* dragged lower than this, the panel closes */
+  --footer-panel-default: 168px;
+  --footer-panel-max: 240px;
+  --stack-col-port: 56px;
+  --stack-col-time: 84px;
+  --pane-title-h: 32px;
+  --sash-hit: 7px;
+  --sash-grip: 28px;
+  --band-h: 2px;
+}

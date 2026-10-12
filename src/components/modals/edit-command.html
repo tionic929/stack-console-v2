@@ -2,170 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Command</title>
+  <title>Edit command</title>
   <link rel="stylesheet" href="../../index.css">
 </head>
 <body>
   <div id="AppContainer">
     <header id="TitleBar">
       <div class="title-left">
-        <h1 id="TitleBarTitle">Edit command dialog</h1>
+        <span id="TitleBarTitle">Edit command</span>
       </div>
       <div class="title-right">
-        <button class="win-btn" id="WinBtnClose"></button>
+        <button type="button" class="win-btn" id="WinBtnClose" aria-label="Close" title="Close"></button>
       </div>
     </header>
 
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Edit command</label>
-        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Modify an existing process entry mapping</span>
-      </div>
-
-      <div class="form-group">
-        <label>Command ID</label>
-        <input type="text" class="input-field" id="InpId" readonly style="opacity: 0.6; cursor: not-allowed;">
-      </div>
-
-      <div class="form-group">
-        <label>Display name</label>
-        <input type="text" class="input-field" id="InpName" placeholder="e.g. Laravel Dev Server">
-      </div>
-
-      <div class="form-group">
-        <label>Icon</label>
-        <div class="icon-picker" id="IconPicker"></div>
-        <input type="hidden" id="InpIcon" value="">
-      </div>
-
-      <div class="form-group">
-        <label>Command</label>
-        <input type="text" class="input-field" id="InpCmd" placeholder="e.g. php artisan serve">
-      </div>
-
-      <div class="form-group">
-        <label>Working directory <span style="color:var(--slate9);">(optional)</span></label>
-        <input type="text" class="input-field" id="InpDir" placeholder="Relative to project base">
-      </div>
-
-      <div class="form-row-split">
-        <div class="form-group">
-          <label>Port <span style="color:var(--slate9);">(optional)</span></label>
-          <input type="text" class="input-field" id="InpPort" placeholder="8000">
-        </div>
-        <div class="form-group">
-          <label>Startup delay (s)</label>
-          <input type="text" class="input-field" id="InpDelay" value="0">
-        </div>
-      </div>
-    </div>
+    <form class="modal-body" id="CommandForm" novalidate>
+      <h1 class="sr-only">Edit command</h1>
+      <p class="modal-intro">Changes apply the next time the service starts.</p>
+    </form>
 
     <div class="modal-footer-strip">
-      <button class="btn-secondary" id="BtnCancel">Cancel</button>
-      <button class="btn-primary" id="BtnApply">Apply</button>
+      <button type="button" class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="BtnApply">Save changes</button>
     </div>
   </div>
 
   <script src="../../util/icon-map.js"></script>
-  <script>
-    let dbContext = null;
-    let targetCommandId = null;
-
-    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
-    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
-
-    // Populate icon picker
-    const iconPicker = document.getElementById('IconPicker');
-    const inpIcon = document.getElementById('InpIcon');
-    const allIcons = window.iconMap.getAllIcons();
-
-    // Add "None" option
-    const noneBtn = document.createElement('button');
-    noneBtn.type = 'button';
-    noneBtn.className = 'icon-picker-item';
-    noneBtn.title = 'No icon (text fallback)';
-    noneBtn.innerHTML = '<span style="font-size:10px;color:var(--slate9);">--</span>';
-    noneBtn.addEventListener('click', () => {
-      document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
-      noneBtn.classList.add('selected');
-      inpIcon.value = '';
-    });
-    iconPicker.appendChild(noneBtn);
-
-    allIcons.forEach(icon => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'icon-picker-item';
-      btn.title = icon.label;
-      btn.innerHTML = icon.svg;
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.icon-picker-item').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        inpIcon.value = icon.key;
-      });
-      iconPicker.appendChild(btn);
-    });
-
-    // Load database state context and populate input fields automatically on window startup
-    async function loadCommandData() {
-      dbContext = await window.api.getStore();
-      if (!dbContext) return;
-
-      const currentProj = dbContext.projects.find(p => p.id === dbContext.activeProject);
-      if (!currentProj) return;
-
-      targetCommandId = dbContext.activeCommandToEdit || (currentProj.commands[0] ? currentProj.commands[0].id : null);
-      
-      if (!targetCommandId) return;
-
-      const cmdConfig = currentProj.commands.find(c => c.id === targetCommandId);
-      if (cmdConfig) {
-        document.getElementById('InpId').value = cmdConfig.id || '';
-        document.getElementById('InpName').value = cmdConfig.displayName || '';
-        document.getElementById('InpCmd').value = cmdConfig.command || '';
-        document.getElementById('InpDir').value = cmdConfig.workingDirectory || '';
-        document.getElementById('InpPort').value = cmdConfig.port || '';
-        document.getElementById('InpDelay').value = cmdConfig.startupDelay || '0';
-
-        // Pre-select current icon
-        if (cmdConfig.icon) {
-          inpIcon.value = cmdConfig.icon;
-          const items = iconPicker.querySelectorAll('.icon-picker-item');
-          items.forEach(item => {
-            if (item.title === window.iconMap.getIconLabel(cmdConfig.icon)) {
-              noneBtn.classList.remove('selected');
-              item.classList.add('selected');
-            }
-          });
-        } else {
-          noneBtn.classList.add('selected');
-        }
-      }
-    }
-
-    document.getElementById('BtnApply').addEventListener('click', async () => {
-      if (!dbContext) dbContext = await window.api.getStore();
-      
-      const currentProj = dbContext.projects.find(p => p.id === dbContext.activeProject);
-      if (currentProj && targetCommandId) {
-        const cmdConfig = currentProj.commands.find(c => c.id === targetCommandId);
-        
-        if (cmdConfig) {
-          cmdConfig.displayName = document.getElementById('InpName').value.trim() || 'Unnamed Command';
-          cmdConfig.icon = inpIcon.value || null;
-          cmdConfig.command = document.getElementById('InpCmd').value.trim() || '';
-          cmdConfig.workingDirectory = document.getElementById('InpDir').value.trim() || '';
-          cmdConfig.port = document.getElementById('InpPort').value.trim() || '';
-          cmdConfig.startupDelay = document.getElementById('InpDelay').value.trim() || '0';
-          
-          await window.api.setStore(dbContext);
-        }
-      }
-      window.api.close();
-    });
-
-    loadCommandData();
-  </script>
+  <script src="../../util/ui.js"></script>
+  <script src="../../util/command-form.js"></script>
+  <script src="edit-command.js"></script>
 </body>
 </html>

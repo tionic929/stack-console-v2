@@ -2,73 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add Command</title>
+  <title>New project</title>
   <link rel="stylesheet" href="../../index.css">
 </head>
 <body>
   <div id="AppContainer">
     <header id="TitleBar">
       <div class="title-left">
-        <h1 id="TitleBarTitle">Add New Project</h1>
+        <span id="TitleBarTitle">New project</span>
       </div>
       <div class="title-right">
-        <button class="win-btn" id="WinBtnClose"></button>
+        <button type="button" class="win-btn" id="WinBtnClose" aria-label="Close" title="Close"></button>
       </div>
     </header>
 
-    <div class="modal-body">
+    <form class="modal-body" id="ProjectForm" novalidate>
+      <h1 class="sr-only">New project</h1>
       <div class="form-group">
-        <label>New Project</label>
-        <span style="font-size:11px; color:var(--slate9); margin-top:-6px;">Create a new project path</span>
+        <label for="InpName">Project name</label>
+        <input type="text" class="input-field" id="InpName" placeholder="e.g. PayrollMS" aria-describedby="ErrName" required>
+        <span class="field-error" id="ErrName" role="alert"></span>
       </div>
 
       <div class="form-group">
-        <label>Project Name</label>
-        <input type="text" class="input-field" id="InpName" placeholder="e.g. PayrollMS">
+        <label for="InpDir">Project folder <span class="label-optional">(optional)</span></label>
+        <div class="input-with-action">
+          <input type="text" class="input-field mono" id="InpDir" placeholder="C:\projects\my-app" spellcheck="false" aria-describedby="HintDir">
+          <button type="button" class="btn-secondary" id="BtnBrowse">Browse…</button>
+        </div>
+        <span class="field-hint" id="HintDir">Commands run here. StackConsole can import the ones it finds (package.json, artisan, Procfile).</span>
       </div>
-    </div>
+    </form>
 
     <div class="modal-footer-strip">
-      <button class="btn-secondary" id="BtnCancel">Cancel</button>
-      <button class="btn-primary" id="BtnSave">Save</button>
+      <button type="button" class="btn-secondary" id="BtnCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="BtnSave">Create project</button>
     </div>
   </div>
 
-  <script>
-    document.getElementById('WinBtnClose').addEventListener('click', () => window.api.close());
-    document.getElementById('BtnCancel').addEventListener('click', () => window.api.close());
-
-    document.getElementById('BtnSave').addEventListener('click', async () => {
-        const rawName = document.getElementById('InpName').value.trim();
-        if(!rawName) return;
-
-        const db = await window.api.getStore();
-
-        if(!db.projects) {
-            db.projects = [];
-        }
-
-        const systemId = rawName.replace(/\s+/g, '-').toLowerCase();
-
-        if (db.projects.some(p => p.id === systemId)) {
-            alert('A project with this name already exists.');
-            return;
-        }
-
-        const newProjectPayload = {
-            id: systemId,
-            name: rawName,
-            baseDirectory: "",
-            commands: []
-        };
-
-        db.projects.push(newProjectPayload);
-        db.activeProject = systemId;
-
-        const success = await window.api.setStore(db);
-        window.api.close();
-    });
-  </script>
+  <script src="../../util/icon-map.js"></script>
+  <script src="../../util/ui.js"></script>
+  <script src="../../util/command-form.js"></script>
+  <script src="add-project.js"></script>
 </body>
 </html>

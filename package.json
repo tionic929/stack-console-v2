@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
-    "dist": "electron-builder"
+    "fetch-python": "node build/fetch-python.js",
+    "dist": "npm run fetch-python && electron-builder"
   },
   "keywords": [
     "electron",
@@ -32,12 +33,16 @@
     },
     "files": [
       "main.js",
+      "main/**/*",
       "preload.js",
       "package.json",
       "src/**/*",
       "services/**/*"
     ],
     "asarUnpack": ["services/**"],
+    "extraResources": [
+      { "from": "vendor/python", "to": "python", "filter": ["**/*"] }
+    ],
     "win": {
       "icon": "src/assets/logo/stacklogo-x256.ico",
       "target": "nsis"
