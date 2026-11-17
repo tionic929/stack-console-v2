@@ -1,4 +1,4 @@
-const { esc, avatar, statusIndicator, statusLabel, normalizeStatus, portOf, newCommandId, confirmDialog } = window.ui;
+const { esc, avatar, statusIndicator, statusLabel, normalizeStatus, portOf, confirmDialog } = window.ui;
 const $ = (id) => document.getElementById(id);
 let dbContext = null;
 let localSelectedCmdId = null;
@@ -6,10 +6,10 @@ let localSelectedCmdId = null;
 window.ui.initWindowControls();
 $('WinBtnClose').addEventListener('click', () => window.api.close());
 $('MgrCloseWindow').addEventListener('click', () => window.api.close());
-$('MgrAddCmd').addEventListener('click', () => window.api.openAddCommand());
-$('MgrImport').addEventListener('click', () => window.api.openImportCommands());
+$('MgrAddCmd').addEventListener('click', () => window.api.openAddCommand(dbContext?.activeProject));
+$('MgrImport').addEventListener('click', () => window.api.openImportCommands(dbContext?.activeProject));
 $('BtnNewProject').addEventListener('click', () => window.api.newProjectCommand());
-$('BtnEditProjectName').addEventListener('click', () => window.api.editProjectName());
+$('BtnEditProjectName').addEventListener('click', () => window.api.editProjectName(dbContext?.activeProject));
 
 function currentProject() {
   return dbContext?.projects?.find(p => p.id === dbContext.activeProject) || null;
@@ -19,11 +19,9 @@ function selectedCommand() {
   return currentProject()?.commands?.find(c => c.id === localSelectedCmdId) || null;
 }
 
-$('MgrEditCmd').addEventListener('click', async () => {
+$('MgrEditCmd').addEventListener('click', () => {
   if (!selectedCommand()) return;
-  dbContext.activeCommandToEdit = localSelectedCmdId;
-  await window.api.setStore(dbContext);
-  window.api.openEditCommand();
+  window.api.openEditCommand({ projectId: dbContext.activeProject, commandId: localSelectedCmdId });
 });
 
 $('MgrStartCmd').addEventListener('click', () => {
@@ -53,10 +51,8 @@ $('BtnDeleteProject').addEventListener('click', async () => {
     ],
   });
   if (choice !== 'delete') return;
-  dbContext.projects = dbContext.projects.filter(p => p.id !== current.id);
-  dbContext.activeProject = dbContext.projects.length > 0 ? dbContext.projects[0].id : '';
   localSelectedCmdId = null;
-  await window.api.setStore(dbContext);
+  await window.ui.failed(await window.api.deleteProject(current.id), 'Couldn\'t delete the project');
 });
 
 $('ProjectDropdownSelector').addEventListener('change', (e) => {
@@ -68,22 +64,17 @@ $('BtnBrowseDirectory').addEventListener('click', async () => {
   const current = currentProject();
   if (!current) return;
   const selectedPath = await window.api.selectDirectory();
-  if (selectedPath) {
-    current.baseDirectory = selectedPath;
-    await window.api.setStore(dbContext);
-  }
+  if (selectedPath) await window.ui.failed(await window.api.setProjectFolder(current.id, selectedPath), 'Couldn\'t change the folder');
 });
 
 $('MgrDupCmd').addEventListener('click', async () => {
   const current = currentProject();
   const source = selectedCommand();
   if (!current || !source) return;
-  // Copy the configuration only (runtime fields are stripped by main anyway)
-  const { id, displayName, status, pid, startedAt, url, detectedPort, exitCode, ready, waitingFor, blockedBy, restartAttempt, restartGaveUp, envSummary, ...config } = source;
-  const duplicate = { ...JSON.parse(JSON.stringify(config)), id: newCommandId(current.commands), displayName: `${displayName} (copy)` };
-  current.commands.push(duplicate);
-  localSelectedCmdId = duplicate.id;
-  await window.api.setStore(dbContext);
+  // The engine copies the stored command, secrets included (P7)
+  const res = await window.api.duplicateCommand(current.id, source.id);
+  if (await window.ui.failed(res, 'Couldn\'t duplicate')) return;
+  localSelectedCmdId = res.commandId;
 });
 
 $('MgrRemoveCmd').addEventListener('click', async () => {
@@ -100,9 +91,8 @@ $('MgrRemoveCmd').addEventListener('click', async () => {
     ],
   });
   if (choice !== 'remove') return;
-  current.commands = current.commands.filter(c => c.id !== target.id);
   localSelectedCmdId = null;
-  await window.api.setStore(dbContext);
+  await window.ui.failed(await window.api.removeCommand(current.id, target.id), 'Couldn\'t remove the command');
 });
 
 function render() {

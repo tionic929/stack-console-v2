@@ -1,0 +1,233 @@
+{
+ "ok": true,
+ "groups": [
+  {
+   "source": "package.json",
+   "items": [
+    {
+     "name": "Vite Dev Server",
+     "command": "yarn dev",
+     "detail": "vite",
+     "kind": "server",
+     "icon": "vite",
+     "preselect": true,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Build",
+     "command": "yarn build",
+     "detail": "vite build",
+     "kind": "task",
+     "icon": "vite",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Start",
+     "command": "yarn start",
+     "detail": "node server.js",
+     "kind": "server",
+     "icon": "node",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Preview",
+     "command": "yarn preview",
+     "detail": "vite preview",
+     "kind": "server",
+     "icon": "vite",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Test",
+     "command": "yarn test",
+     "detail": "vitest",
+     "kind": "task",
+     "icon": "vite",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Start Prod",
+     "command": "yarn start:prod",
+     "detail": "node dist",
+     "kind": "server",
+     "icon": "node",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Watch Css",
+     "command": "yarn watch:css",
+     "detail": "tailwind -w",
+     "kind": "server",
+     "icon": "node",
+     "preselect": true,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Serve X",
+     "command": "yarn serve-x",
+     "detail": "tsc --watch",
+     "kind": "task",
+     "icon": "node",
+     "preselect": false,
+     "workingDirectory": ""
+    }
+   ],
+   "folder": ""
+  },
+  {
+   "source": "composer.json",
+   "items": [
+    {
+     "name": "Dev",
+     "command": "composer run dev",
+     "detail": "Composer\\Config::disableProcessTimeout && npx concurrently \"php artisan serve\" \"npm run dev\"",
+     "kind": "server",
+     "icon": "php",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Test",
+     "command": "composer run test",
+     "detail": "phpunit",
+     "kind": "task",
+     "icon": "php",
+     "preselect": false,
+     "workingDirectory": ""
+    },
+    {
+     "name": "N",
+     "command": "composer run n",
+     "detail": "5",
+     "kind": "task",
+     "icon": "php",
+     "preselect": false,
+     "workingDirectory": ""
+    }
+   ],
+   "folder": ""
+  },
+  {
+   "source": "Laravel (artisan)",
+   "items": [
+    {
+     "name": "Laravel Dev Server",
+     "command": "php artisan serve",
+     "detail": "",
+     "kind": "server",
+     "icon": "laravel",
+     "preselect": true,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Queue Worker",
+     "command": "php artisan queue:work",
+     "detail": "",
+     "kind": "worker",
+     "icon": "laravel",
+     "preselect": true,
+     "workingDirectory": ""
+    },
+    {
+     "name": "Scheduler",
+     "command": "php artisan schedule:work",
+     "detail": "",
+     "kind": "worker",
+     "icon": "laravel",
+     "preselect": false,
+     "workingDirectory": ""
+    }
+   ],
+   "folder": ""
+  },
+  {
+   "source": "Procfile",
+   "items": [
+    {
+     "name": "Worker",
+     "command": "php artisan queue:work --tries=3",
+     "detail": "",
+     "kind": "worker",
+     "icon": "laravel",
+     "preselect": true,
+     "workingDirectory": ""
+    }
+   ],
+   "folder": ""
+  },
+  {
+   "source": "admin-api/Django (manage.py)",
+   "folder": "admin-api",
+   "items": [
+    {
+     "name": "Django Dev Server",
+     "command": "python manage.py runserver",
+     "detail": "",
+     "kind": "server",
+     "icon": "python",
+     "preselect": true,
+     "workingDirectory": "admin-api"
+    }
+   ]
+  },
+  {
+   "source": "backend/package.json",
+   "folder": "backend",
+   "items": [
+    {
+     "name": "Dev (backend)",
+     "command": "npm run dev",
+     "detail": "nodemon index.js",
+     "kind": "server",
+     "icon": "node",
+     "preselect": true,
+     "workingDirectory": "backend"
+    },
+    {
+     "name": "Migrate",
+     "command": "npm run migrate",
+     "detail": "knex migrate",
+     "kind": "task",
+     "icon": "node",
+     "preselect": false,
+     "workingDirectory": "backend"
+    }
+   ]
+  },
+  {
+   "source": "frontend/package.json",
+   "folder": "frontend",
+   "items": [
+    {
+     "name": "Next.js Dev Server",
+     "command": "npm run dev",
+     "detail": "next dev",
+     "kind": "server",
+     "icon": "react",
+     "preselect": true,
+     "workingDirectory": "frontend"
+    },
+    {
+     "name": "Build (frontend)",
+     "command": "npm run build",
+     "detail": "next build",
+     "kind": "task",
+     "icon": "react",
+     "preselect": false,
+     "workingDirectory": "frontend"
+    }
+   ]
+  }
+ ],
+ "skipped": [
+  {
+   "file": "admin-api/package.json",
+   "reason": "is not valid JSON"
+  }
+ ]
+}

@@ -3,6 +3,7 @@ import os
 import json
 import subprocess
 import threading
+import time
 
 # Read configuration arguments safely from Electron
 if len(sys.argv) < 3:
@@ -11,6 +12,19 @@ if len(sys.argv) < 3:
 
 command_to_run = sys.argv[1]
 working_directory = sys.argv[2]
+# 'shell' = the interactive shell: its prompt (C:\Users\Name>) has no newline, so '>' also ends a line there.
+# Services never use that rule: '->' and '=>' in their output must not split a line.
+SHELL_MODE = len(sys.argv) > 3 and sys.argv[3] == 'shell'
+MAX_LINE_CHARS = 8192      # a line longer than this is sent in pieces
+IDLE_FLUSH_SECONDS = 0.15  # text with no newline (a question, a prompt) is sent after this pause
+
+write_lock = threading.Lock()
+
+def emit(payload):
+    # One JSON object per line; two reader threads share stdout
+    with write_lock:
+        sys.stdout.write(json.dumps(payload) + "\n")
+        sys.stdout.flush()
 
 
 # Windows: the command and everything it starts run in a job object that kills them all when this worker exits.
@@ -76,43 +90,47 @@ def start_in_job(process):
         service_job['resume'](handle)
 
 def stream_pipe(pipe, pipe_type):
-    """Reads execution buffers character-by-character to capture live path prompts without trailing newlines."""
+    """Sends output line by line. Text without a newline is sent after a short pause, so prompts still show."""
     buffer = []
+    lock = threading.Lock()
+    last_char_at = [time.monotonic()]
+    finished = threading.Event()
+
+    def flush_locked():
+        if not buffer:
+            return
+        text = "".join(buffer)
+        buffer.clear()
+        if text.endswith('\r\n'):
+            text = text[:-2] + '\n'
+        elif text.endswith('\r'):
+            text = text[:-1] + '\n'
+        emit({"type": "log", "pipe": pipe_type, "text": text})
+
+    def idle_flusher():
+        while not finished.wait(0.05):
+            with lock:
+                if buffer and time.monotonic() - last_char_at[0] >= IDLE_FLUSH_SECONDS:
+                    flush_locked()
+
+    threading.Thread(target=idle_flusher, daemon=True).start()
+
     while True:
-        # Read 1 character at a time instead of readline
         char = pipe.read(1)
         if not char:
             break
-            
-        buffer.append(char)
-        
-        # Check if we should flush the buffer (on newline or when a Windows prompt pattern appears)
-        # Windows prompts typically end with '>' (e.g., C:\Users\Name>)
-        is_newline = char == '\n' or char == '\r'
-        is_prompt = char == '>' and len(buffer) >= 3 and buffer[-2] != ' ' 
+        with lock:
+            buffer.append(char)
+            last_char_at[0] = time.monotonic()
+            is_newline = char == '\n' or char == '\r'
+            is_prompt = SHELL_MODE and char == '>' and len(buffer) >= 3 and buffer[-2] != ' '
+            if is_newline or is_prompt or len(buffer) >= MAX_LINE_CHARS:
+                flush_locked()
 
-        if is_newline or is_prompt:
-            clean_text = "".join(buffer)
-            
-            # Normalize trailing line breaks safely
-            if clean_text.endswith('\r\n'):
-                clean_text = clean_text[:-2] + '\n'
-            elif clean_text.endswith('\r') or clean_text.endswith('\n'):
-                clean_text = clean_text[:-1] + '\n'
+    finished.set()
+    with lock:
+        flush_locked()
 
-            payload = {
-                "type": "log",
-                "pipe": pipe_type,
-                "text": clean_text
-            }
-            print(json.dumps(payload))
-            sys.stdout.flush()
-            buffer.clear()
-
-    # Flush anything remaining if the stream closes
-    if buffer:
-        print(json.dumps({"type": "log", "pipe": pipe_type, "text": "".join(buffer)}))
-        sys.stdout.flush()
 try:
 
     custom_env = os.environ.copy()
@@ -130,7 +148,8 @@ try:
         text=True,
         bufsize=1,
         creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | (CREATE_SUSPENDED if service_job else 0)) if os.name == 'nt' else 0,
-        encoding='utf-8'
+        encoding='utf-8',
+        errors='replace'   # bytes that aren't UTF-8 (console code pages) show as \ufffd instead of ending the stream
     )
     start_in_job(process)
 
@@ -145,8 +164,7 @@ try:
     input_thread.start()
 
     # Let Electron know the native operating system process started up successfully
-    print(json.dumps({"type": "started", "pid": process.pid}))
-    sys.stdout.flush()
+    emit({"type": "started", "pid": process.pid})
 
     # Use standard Python threading threads to capture stdout and stderr concurrently without freezing
     stdout_thread = threading.Thread(target=stream_pipe, args=(process.stdout, "stdout"))
@@ -159,9 +177,7 @@ try:
     stdout_thread.join()
     stderr_thread.join()
 
-    print(json.dumps({"type": "exit", "code": process.returncode}))
-    sys.stdout.flush()
+    emit({"type": "exit", "code": process.returncode})
 
 except Exception as e:
-    print(json.dumps({"type": "exception", "message": str(e)}))
-    sys.stdout.flush()
+    emit({"type": "exception", "message": str(e)})

@@ -878,9 +878,9 @@ ipcMain.handle('port-free', async (event, pid) => {
 });
 
 // ── Import commands from the project folder ──────────────────────
-ipcMain.handle('import-scan', () => {
+ipcMain.handle('import-scan', (event, projectId) => {
   const db = readDatabase();
-  const project = activeProjectOf(db);
+  const project = projectId ? db.projects.find(p => p.id === projectId) : activeProjectOf(db);
   if (!project) return { ok: false, error: 'No active project.' };
   return scanProjectTree(project.baseDirectory, project.commands || []);
 });
@@ -893,10 +893,10 @@ function newCommandId(commands) {
 
 const importKey = (wd, command) => `${String(wd || '').trim().toLowerCase()}|${String(command || '').trim().toLowerCase()}`;
 
-ipcMain.handle('import-apply', (event, items) => {
+ipcMain.handle('import-apply', (event, items, projectId) => {
   if (!Array.isArray(items)) return { ok: false };
   const db = readDatabase();
-  const project = activeProjectOf(db);
+  const project = projectId ? db.projects.find(p => p.id === projectId) : activeProjectOf(db);
   if (!project) return { ok: false, error: 'No active project.' };
   project.commands = project.commands || [];
   const existing = new Set(project.commands.map(c => importKey(c.workingDirectory, c.command)));
@@ -916,6 +916,106 @@ ipcMain.handle('import-apply', (event, items) => {
   });
   writeDatabase(db);
   return { ok: true, added: clean.length };
+});
+
+// ── Specific config changes (Phase B: replace whole-config saves) ─
+const COMMAND_SKIP = new Set(['id', ...RUNTIME_FIELDS]);
+
+function commandFields(values, oldCmd, projectId) {
+  if (!values || typeof values !== 'object') return { error: 'Nothing to save.' };
+  const fields = {};
+  Object.keys(values).forEach(k => { if (!COMMAND_SKIP.has(k)) fields[k] = values[k]; });
+  const command = typeof fields.command === 'string' ? fields.command.trim() : '';
+  if (!command) return { error: 'Enter the command to run.' };
+  if (command.length > 4000) return { error: 'That command is too long.' };
+  if (Array.isArray(fields.env)) {
+    // Reuse sealSecrets: new values are encrypted, untouched secrets keep their stored value
+    const prev = { projects: [{ id: projectId, commands: oldCmd ? [oldCmd] : [] }] };
+    const next = { projects: [{ id: projectId, commands: [{ id: oldCmd ? oldCmd.id : '__new__', env: fields.env }] }] };
+    fields.env = sealSecrets(next, prev).projects[0].commands[0].env;
+  }
+  return { fields };
+}
+
+ipcMain.handle('project-add', (event, { name, baseDirectory } = {}) => {
+  const rawName = typeof name === 'string' ? name.trim().slice(0, 80) : '';
+  if (!rawName) return { ok: false, error: 'Give the project a name.' };
+  const db = readDatabase();
+  const id = rawName.replace(/\s+/g, '-').toLowerCase();
+  if (db.projects.some(p => p.id === id)) return { ok: false, error: `A project called "${rawName}" already exists.` };
+  db.projects.push({ id, name: rawName, baseDirectory: typeof baseDirectory === 'string' ? baseDirectory.trim() : '', commands: [] });
+  db.activeProject = id;
+  writeDatabase(db);
+  return { ok: true, projectId: id };
+});
+
+ipcMain.handle('project-rename', (event, { projectId, name } = {}) => {
+  const db = readDatabase();
+  const project = db.projects.find(p => p.id === projectId);
+  const fresh = typeof name === 'string' ? name.trim().slice(0, 80) : '';
+  if (!project) return { ok: false, error: 'Unknown project.' };
+  if (!fresh) return { ok: false, error: 'The project needs a name.' };
+  project.name = fresh;
+  writeDatabase(db);
+  return { ok: true };
+});
+
+ipcMain.handle('project-delete', (event, projectId) => {
+  const db = readDatabase();
+  const project = db.projects.find(p => p.id === projectId);
+  if (!project) return { ok: false, error: 'Unknown project.' };
+  (project.commands || []).forEach(c => executionEngineStop(project.id, c.id));
+  db.projects = db.projects.filter(p => p.id !== projectId);
+  if (db.activeProject === projectId) db.activeProject = db.projects.length ? db.projects[0].id : '';
+  writeDatabase(db);
+  return { ok: true };
+});
+
+ipcMain.handle('command-add', (event, { projectId, command } = {}) => {
+  const db = readDatabase();
+  const project = db.projects.find(p => p.id === projectId);
+  if (!project) return { ok: false, error: 'Unknown project.' };
+  const res = commandFields(command, null, projectId);
+  if (res.error) return { ok: false, error: res.error };
+  project.commands = project.commands || [];
+  const id = newCommandId(project.commands);
+  project.commands.push({ id, ...res.fields });
+  writeDatabase(db);
+  return { ok: true, commandId: id };
+});
+
+ipcMain.handle('command-update', (event, { projectId, commandId, command } = {}) => {
+  const db = readDatabase();
+  const { cmd } = findCommand(db, projectId, commandId);
+  if (!cmd) return { ok: false, error: 'That command no longer exists. It may have been removed in another window.' };
+  const res = commandFields(command, cmd, projectId);
+  if (res.error) return { ok: false, error: res.error };
+  Object.assign(cmd, res.fields);
+  writeDatabase(db);
+  return { ok: true };
+});
+
+ipcMain.handle('command-remove', (event, { projectId, commandId } = {}) => {
+  const db = readDatabase();
+  const { project, cmd } = findCommand(db, projectId, commandId);
+  if (!cmd) return { ok: false, error: 'Unknown command.' };
+  executionEngineStop(projectId, commandId);
+  project.commands = project.commands.filter(c => c.id !== commandId);
+  project.commands.forEach(c => { if (c.startAfter === commandId) delete c.startAfter; });
+  writeDatabase(db);
+  return { ok: true };
+});
+
+// P7: the copy keeps the stored (sealed) secret values
+ipcMain.handle('command-duplicate', (event, { projectId, commandId } = {}) => {
+  const db = readDatabase();
+  const { project, cmd } = findCommand(db, projectId, commandId);
+  if (!cmd) return { ok: false, error: 'Unknown command.' };
+  const copy = { ...JSON.parse(JSON.stringify(cmd)), id: newCommandId(project.commands), displayName: `${cmd.displayName} (copy)` };
+  RUNTIME_FIELDS.forEach(f => delete copy[f]);
+  project.commands.splice(project.commands.indexOf(cmd) + 1, 0, copy);
+  writeDatabase(db);
+  return { ok: true, commandId: copy.id };
 });
 
 // ── Master folders: add, change, remove, set repos up ───────────
@@ -1344,7 +1444,7 @@ function claimDevShortcut() {
   } catch {}
 }
 
-function generateWindowFrame(width, height, minW, minH, isResizable, entryHtml) {
+function generateWindowFrame(width, height, minW, minH, isResizable, entryHtml, query) {
   const win = new BrowserWindow({
     width: width,
     height: height,
@@ -1382,7 +1482,7 @@ function generateWindowFrame(width, height, minW, minH, isResizable, entryHtml) 
   win.webContents.on('will-navigate', (event) => event.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
-  win.loadFile(entryHtml);
+  win.loadFile(entryHtml, query ? { query } : undefined);
   return win;
 }
 
@@ -1447,15 +1547,24 @@ ipcMain.on('close-window', () => {
   if (mainWindow) mainWindow.hide();
 });
 
-ipcMain.on('route-add-command', () => {
+// Tool windows open locked to their project (and command): the target travels in the URL query
+function windowTarget(payload, withCommand) {
+  const db = readDatabase();
+  const projectId = (payload && typeof payload.projectId === 'string' && payload.projectId) || db.activeProject || '';
+  const query = projectId ? { projectId } : {};
+  if (withCommand && payload && typeof payload.commandId === 'string') query.commandId = payload.commandId;
+  return query;
+}
+
+ipcMain.on('route-add-command', (event, payload) => {
   if (addCommandWindow) { addCommandWindow.focus(); return; }
-  addCommandWindow = generateWindowFrame(560, 760, 560, 600, true, 'src/components/modals/add-command.html');
+  addCommandWindow = generateWindowFrame(560, 760, 560, 600, true, 'src/components/modals/add-command.html', windowTarget(payload));
   addCommandWindow.on('closed', () => { addCommandWindow = null; });
 });
 
-ipcMain.on('route-edit-command', () => {
+ipcMain.on('route-edit-command', (event, payload) => {
   if (editCommandWindow) { editCommandWindow.focus(); return; }
-  editCommandWindow = generateWindowFrame(560, 760, 560, 600, true, 'src/components/modals/edit-command.html');
+  editCommandWindow = generateWindowFrame(560, 760, 560, 600, true, 'src/components/modals/edit-command.html', windowTarget(payload, true));
   editCommandWindow.on('closed', () => { editCommandWindow = null; activeCommandToEdit = null; });
 });
 
@@ -1471,15 +1580,15 @@ ipcMain.on('route-project-manager', () => {
   projectManagerWindow.on('closed', () => { projectManagerWindow = null; });
 });
 
-ipcMain.on('route-edit-project-name', () => {
+ipcMain.on('route-edit-project-name', (event, payload) => {
   if (editProjectNameWindow) { editProjectNameWindow.focus(); return; }
-  editProjectNameWindow = generateWindowFrame(480, 220, 480, 220, false, 'src/components/modals/edit-project-name.html');
+  editProjectNameWindow = generateWindowFrame(480, 220, 480, 220, false, 'src/components/modals/edit-project-name.html', windowTarget(payload));
   editProjectNameWindow.on('closed', () => { editProjectNameWindow = null; });
 })
 
-ipcMain.on('route-import-commands', () => {
+ipcMain.on('route-import-commands', (event, payload) => {
   if (importCommandsWindow) { importCommandsWindow.focus(); return; }
-  importCommandsWindow = generateWindowFrame(520, 600, 520, 600, false, 'src/components/modals/import-commands.html');
+  importCommandsWindow = generateWindowFrame(520, 600, 520, 600, false, 'src/components/modals/import-commands.html', windowTarget(payload));
   importCommandsWindow.on('closed', () => { importCommandsWindow = null; });
 });
 

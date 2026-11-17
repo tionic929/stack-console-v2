@@ -61,6 +61,22 @@ No frameworks. No bundlers. Just Electron, vanilla JS, and a Python helper for p
 
 ---
 
+## Building from source (Tauri version, in progress)
+
+The app is moving from Electron to Tauri 2 with a Rust engine (see `PLAN.md`). The Electron app above is still the released one; the Tauri app runs the same interface and is being checked for parity.
+
+Needs the Rust toolchain (`rustup`, stable).
+
+```bash
+cargo test -p stackconsole-engine      # engine tests (macOS/Linux run real processes)
+cargo run -p stackconsole-app          # the desktop app, debug build
+cargo run -p stackconsole-engine --example run -- "npm run dev" 5 path/to/project
+```
+
+The Tauri app keeps its project list in the OS app-data folder (`com.stack.console`); on first start it copies the Electron app's list if there is one. No Python is needed.
+
+---
+
 ## Why StackConsole?
 
 Built for developers who found themselves juggling multiple terminal windows during local development — PHP Artisan, Vite, Node watchers, Python scripts, database servers. One dashboard to launch, monitor, and stop every service your project needs.

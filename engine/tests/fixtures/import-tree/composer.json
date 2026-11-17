@@ -1,0 +1,1 @@
+{"scripts": {"dev": ["Composer\\Config::disableProcessTimeout", "npx concurrently \"php artisan serve\" \"npm run dev\""], "post-autoload-dump": ["@php artisan package:discover"], "test": "phpunit", "n": 5}}

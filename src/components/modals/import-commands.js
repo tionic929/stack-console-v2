@@ -3,6 +3,7 @@ const { esc } = window.ui;
 const $ = (id) => document.getElementById(id);
 const close = () => window.api.close();
 let found = [];
+let projectId = null; // fixed when the window opened (P5)
 
 window.ui.initWindowControls();
 $('WinBtnClose').addEventListener('click', close);
@@ -22,7 +23,8 @@ function renderButton() {
 }
 
 async function init() {
-  const res = await window.api.importScan();
+  projectId = window.ui.windowTarget(await window.api.getStore()).projectId;
+  const res = await window.api.importScan(projectId);
   if (!res || !res.ok) {
     $('ImportIntro').textContent = res?.error || 'Could not read the project folder.';
     return;
@@ -67,7 +69,8 @@ $('BtnImport').addEventListener('click', async () => {
   const items = selected().map(i => ({ name: i.name, command: i.command, icon: i.icon, workingDirectory: i.workingDirectory || '' }));
   if (!items.length) return;
   $('BtnImport').disabled = true;
-  await window.api.importApply(items);
+  const res = await window.api.importApply(items, projectId);
+  if (await window.ui.failed(res, 'Couldn\'t import')) { $('BtnImport').disabled = false; return; }
   close();
 });
 

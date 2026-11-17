@@ -1,0 +1,1 @@
+{"scripts": {"dev": "vite", "build": "vite build", "start": "node server.js", "preview": "vite preview", "test": "vitest", "prebuild": "rimraf dist", "postinstall": "patch", "start:prod": "node dist", "lint": "eslint .", "watch:css": "tailwind -w", "serve-x": "tsc --watch"}}

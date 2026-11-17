@@ -177,4 +177,41 @@
   --sash-hit: 7px;
   --sash-grip: 28px;
   --band-h: 2px;
+
+  /* ── Semantic layer (B-7, DESIGN-PLAN section 3) ──────────────
+     Components use these, not the raw scales above. Today each is an alias of the current value, so
+     nothing looks different; a theme (Phase D) is one block that remaps them. */
+  --surface-0: var(--slate1);      /* window, log */
+  --surface-1: var(--slate2);      /* panels, dialogs */
+  --surface-2: var(--slate3);      /* raised rows, inputs */
+  --surface-3: var(--slate4);      /* hover, selected */
+  --text: var(--slate12);
+  --text-soft: var(--slate11);
+  --text-muted: var(--slate10);
+  --text-on-light: var(--slate1);  /* text on a light fill */
+  --border: var(--slate6);
+  --border-emphasis: var(--slate7);
+  --accent: var(--indigo9);
+  --accent-text: var(--indigo11);
+  --accent-soft: var(--indigo3);
+  --status-running: var(--jade9);
+  --status-starting: var(--amber9);
+  --status-crashed: var(--ruby9);
+  --status-crashed-text: var(--ruby11);
+  --status-waiting: var(--waiting);
+  --status-offline: var(--slate10);
+  --elevation-1: none;
+  --elevation-2: var(--shadow-float);   /* menus, popovers, toasts */
+  --elevation-3: var(--shadow-dialog);  /* dialogs, drawers */
+
+  /* ── Motion (B-7, DESIGN-PLAN section 5) ── honour prefers-reduced-motion wherever these are used */
+  --dur-fast: 120ms;               /* hover, press, caret */
+  --dur-base: 180ms;               /* menus, toasts, banners, region resize */
+  --dur-slow: 260ms;               /* drawers, dialogs */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --drawer-w: 520px;               /* inspector drawer (Add / Edit command) */
+  --drawer-min: 420px;
+  --toast-w: 340px;
 }

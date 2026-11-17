@@ -224,5 +224,19 @@
     });
   }
 
-  window.ui = { esc, icons, normalizeStatus, statusLabel, statusIndicator, avatar, portOf, newCommandId, confirmDialog, initWindowControls, openMenu, closeMenu };
+  // A tool window's target ({ projectId, commandId }), fixed when it was opened (it travels in the URL).
+  // Falls back to the active project only for a window opened without one.
+  function windowTarget(db) {
+    const q = new URLSearchParams(window.location.search);
+    return { projectId: q.get('projectId') || db?.activeProject || null, commandId: q.get('commandId') || null };
+  }
+
+  // Shows why a save failed; returns true when it didn't
+  async function failed(res, title = 'Couldn\'t save') {
+    if (res && res.ok !== false) return false;
+    await confirmDialog({ title, body: res?.error || 'Try again.', actions: [{ label: 'OK', value: null, variant: 'primary', autofocus: true }] });
+    return true;
+  }
+
+  window.ui = { esc, icons, normalizeStatus, statusLabel, statusIndicator, avatar, portOf, newCommandId, confirmDialog, initWindowControls, openMenu, closeMenu, windowTarget, failed };
 })();

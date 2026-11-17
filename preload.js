@@ -5,12 +5,13 @@ contextBridge.exposeInMainWorld('api', {
   maximize: () => ipcRenderer.send('win-maximize'),
   close: () => ipcRenderer.send('win-close'),
 
-  openAddCommand: () => ipcRenderer.send('route-add-command'),
-  openEditCommand: () => ipcRenderer.send('route-edit-command'),
+  // Tool windows open locked to the project (and command) they are for; it travels in their URL
+  openAddCommand: (projectId) => ipcRenderer.send('route-add-command', { projectId }),
+  openEditCommand: (target) => ipcRenderer.send('route-edit-command', target || {}),
   newProjectCommand: () => ipcRenderer.send('route-new-project-command'),
-  editProjectName: () => ipcRenderer.send('route-edit-project-name'),
+  editProjectName: (projectId) => ipcRenderer.send('route-edit-project-name', { projectId }),
   openProjectManager: () => ipcRenderer.send('route-project-manager'),
-  openImportCommands: () => ipcRenderer.send('route-import-commands'),
+  openImportCommands: (projectId) => ipcRenderer.send('route-import-commands', { projectId }),
 
   openCommandPrompt: () => ipcRenderer.send('route-command-prompt'),
   sendTerminalInput: (payload) => ipcRenderer.send('cmd-terminal-input', payload),
@@ -56,8 +57,17 @@ contextBridge.exposeInMainWorld('api', {
 
   checkPort: (target) => ipcRenderer.invoke('port-check', target),
   freePort: (pid) => ipcRenderer.invoke('port-free', pid),
-  importScan: () => ipcRenderer.invoke('import-scan'),
-  importApply: (items) => ipcRenderer.invoke('import-apply', items),
+  importScan: (projectId) => ipcRenderer.invoke('import-scan', projectId),
+  importApply: (items, projectId) => ipcRenderer.invoke('import-apply', items, projectId),
+
+  // Specific changes, each naming its project (replace setStore; Phase B)
+  addProject: (name, baseDirectory) => ipcRenderer.invoke('project-add', { name, baseDirectory }),
+  renameProject: (projectId, name) => ipcRenderer.invoke('project-rename', { projectId, name }),
+  deleteProject: (projectId) => ipcRenderer.invoke('project-delete', projectId),
+  addCommand: (projectId, command) => ipcRenderer.invoke('command-add', { projectId, command }),
+  updateCommand: (projectId, commandId, command) => ipcRenderer.invoke('command-update', { projectId, commandId, command }),
+  removeCommand: (projectId, commandId) => ipcRenderer.invoke('command-remove', { projectId, commandId }),
+  duplicateCommand: (projectId, commandId) => ipcRenderer.invoke('command-duplicate', { projectId, commandId }),
 
   getLogs: (projectId, commandId) => ipcRenderer.invoke('logs-get', { projectId, commandId }),
   clearLogs: (projectId, commandId) => ipcRenderer.send('cmd-clear-logs', {projectId, commandId}),

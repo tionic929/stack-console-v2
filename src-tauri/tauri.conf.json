@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "StackConsole",
+  "version": "1.0.0-beta.1",
+  "identifier": "com.stack.console",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.png", "icons/icon.ico"],
+    "category": "DeveloperTool",
+    "shortDescription": "Start, watch and stop a project's local dev services"
+  }
+}

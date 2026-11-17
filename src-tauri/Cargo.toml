@@ -1,0 +1,27 @@
+[package]
+name = "stackconsole-app"
+version = "1.0.0-beta.1"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "StackConsole desktop app: the window, tray and notifications around the engine"
+
+[[bin]]
+name = "stackconsole"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = "2.7.5"
+
+[dependencies]
+aes-gcm = "0.10"
+base64 = "0.22"
+getrandom = "0.2"
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
+serde_json = "1.0.154"
+stackconsole-engine = { path = "../engine" }
+tauri = { version = "2.12.6", features = ["tray-icon", "image-png", "image-ico"] }
+tauri-plugin-dialog = "2.8.4"
+tauri-plugin-notification = "2.8.1"
+tauri-plugin-opener = "2.7.3"
+tauri-plugin-single-instance = "2.5.5"
+tokio = { version = "1.54.1", features = ["sync", "time"] }

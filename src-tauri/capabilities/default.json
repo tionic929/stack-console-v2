@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What every StackConsole window may use: its own app commands and Tauri's core events.",
+  "windows": ["*"],
+  "permissions": ["core:default"]
+}

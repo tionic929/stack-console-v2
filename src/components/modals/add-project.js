@@ -18,24 +18,8 @@ function showError(message) {
 async function submit() {
   const rawName = nameInput.value.trim();
   if (!rawName) return showError('Give the project a name.');
-
-  const db = await window.api.getStore();
-  db.projects = db.projects || [];
-
-  const systemId = rawName.replace(/\s+/g, '-').toLowerCase();
-  if (db.projects.some(p => p.id === systemId)) {
-    return showError(`A project called "${rawName}" already exists.`);
-  }
-
-  db.projects.push({
-    id: systemId,
-    name: rawName,
-    baseDirectory: document.getElementById('InpDir').value.trim(),
-    commands: []
-  });
-  db.activeProject = systemId;
-
-  await window.api.setStore(db);
+  const res = await window.api.addProject(rawName, document.getElementById('InpDir').value.trim());
+  if (!res || !res.ok) return showError(res?.error || 'The project could not be created.');
   close();
 }
 

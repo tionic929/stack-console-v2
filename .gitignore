@@ -28,3 +28,7 @@ video/
 vendor/
 
 obsidian/
+# Rust build output
+target/
+# Tauri generated schemas
+src-tauri/gen/

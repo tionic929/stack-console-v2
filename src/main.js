@@ -6,11 +6,6 @@ let appState = null;
 // What the main panel shows: a service of any project, the shell, or nothing.
 let selection = null;          // { kind: 'cmd', projectId, id } | { kind: 'shell' } | null
 
-// Log view state: which stream is in the DOM and the last line sequence rendered
-let renderedKey = null;
-let renderedSeq = 0;
-let loadingQueue = null;       // lines that arrive while a snapshot is loading
-let unseenLines = 0;
 let pendingAction = null;      // disables the header actions until main reports the new status
 const MAX_DOM_LINES = 5000;
 const SHELL_KEY = 'shell';
@@ -81,6 +76,28 @@ const finder = window.logFind.create({
 // Second log beside the main one: Ctrl+click a service, drag it onto the log, or ⋯ → Open another log beside
 let beside = readPref('sc.beside', null); // { projectId, commandId } | null
 const lastServiceOf = new Map();         // projectId -> the service last shown, for the icons-only sidebar
+// The main log and the one beside it are the same LogView class (D6); the main one adds the find bar
+// and refreshes the crash banner when error lines arrive.
+const logA = new window.LogView({
+  term: $('Terminal'),
+  logs: $('TerminalLogs'),
+  jump: $('JumpLatestBtn'),
+  max: MAX_DOM_LINES,
+  arrowIcon: icons.arrowDown,
+  keyOf: (projectId, commandId) => streamKeyFor(projectId, commandId),
+  lineElement: (entry) => lineElement(entry),
+  placeholder: () => placeholderText(),
+  onAdded: (els) => finder.added(els),
+  onRemoved: (els) => finder.removed(els),
+  onReset: () => finder.reset(),
+  onAppended: (els) => {
+    // A crash banner quotes the last error line, so refresh it when errors arrive
+    if (selection?.kind === 'cmd' && els.some(el => el.dataset.level === 'error')) {
+      const cmd = selectedCmd();
+      if (cmd && normalizeStatus(cmd.status) === 'crashed') renderServiceBanner(selectedProject(), cmd, 'crashed');
+    }
+  },
+});
 const logB = new window.LogView({
   term: $('TerminalB'),
   logs: $('TerminalLogsB'),
@@ -386,8 +403,8 @@ function projectNode(p, folder) {
     note.className = 'tree-note';
     note.innerHTML = '<span>No services yet.</span><span class="inline-row"></span>';
     const row = note.querySelector('.inline-row');
-    row.appendChild(smallButton('Add command', () => withActive(p.id, () => window.api.openAddCommand())));
-    const imp = smallButton('Import…', () => withActive(p.id, () => window.api.openImportCommands()));
+    row.appendChild(smallButton('Add command', () => withActive(p.id, () => window.api.openAddCommand(p.id))));
+    const imp = smallButton('Import…', () => withActive(p.id, () => window.api.openImportCommands(p.id)));
     imp.disabled = !p.baseDirectory || !!p.folderMissing;
     if (imp.disabled) imp.title = p.baseDirectory ? 'Folder missing' : 'Choose the project folder first (⋯ → Choose folder…)';
     row.appendChild(imp);
@@ -1061,7 +1078,7 @@ async function setUp(folder, mode) {
   revealProjectId = res.projectIds[0];
   if (projectById(revealProjectId)) render();
   // Commands found but none pre-ticked (composer-only): choose them instead of guessing
-  if (res.needsReview) window.api.openImportCommands();
+  if (res.needsReview) window.api.openImportCommands(res.projectIds[0]);
 }
 
 function revealNewProject() {
@@ -1157,12 +1174,8 @@ async function combineProject(p) {
   if (res && !res.ok) await notify('Couldn\'t combine', res.error);
 }
 
-async function editCommand(projectId, commandId) {
-  const db = await window.api.getStore();
-  db.activeProject = projectId;
-  db.activeCommandToEdit = commandId;
-  await window.api.setStore(db);
-  window.api.openEditCommand();
+function editCommand(projectId, commandId) {
+  withActive(projectId, () => window.api.openEditCommand({ projectId, commandId }));
 }
 
 function openProjectMenu(p, anchor) {
@@ -1179,11 +1192,11 @@ function openProjectMenu(p, anchor) {
     { label: 'Open in VS Code', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => folderAction(p.id, null, 'vscode') },
     { label: 'Terminal here', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => folderAction(p.id, null, 'terminal') },
     'separator',
-    { label: 'Add command…', action: () => withActive(p.id, () => window.api.openAddCommand()) },
-    { label: 'Import from folder…', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => withActive(p.id, () => window.api.openImportCommands()) },
+    { label: 'Add command…', action: () => withActive(p.id, () => window.api.openAddCommand(p.id)) },
+    { label: 'Import from folder…', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => withActive(p.id, () => window.api.openImportCommands(p.id)) },
     ...(p.folderMissing && p.relinkTo ? [{ label: `Relink to ${baseName(p.relinkTo)}`, title: p.relinkTo, action: () => relinkProject(p) }] : []),
     { label: p.baseDirectory ? 'Change folder…' : 'Choose folder…', action: () => chooseFolder(p) },
-    { label: 'Rename…', action: () => withActive(p.id, () => window.api.editProjectName()) },
+    { label: 'Rename…', action: () => withActive(p.id, () => window.api.editProjectName(p.id)) },
     { label: 'Colour & icon…', hint: window.identity.describe(p), action: () => editIdentity(p, anchor) },
     { label: p.pinned ? 'Unpin' : 'Pin to top', action: () => pinProject(p, !p.pinned) },
     'separator',
@@ -1255,7 +1268,7 @@ function setMainSections(visible) {
   $('LogToolbar').hidden = !visible;
   $('LogSplit').hidden = !visible;
   $('EmptyState').hidden = visible;
-  if (!visible) { $('StateBanner').hidden = true; renderedKey = null; setBand(null); }
+  if (!visible) { $('StateBanner').hidden = true; logA.forget(); setBand(null); }
 }
 
 function showEmptyState(title, body, primary, secondary) {
@@ -1310,9 +1323,9 @@ function renderMain() {
         ? `Found ${found} command${found === 1 ? '' : 's'} in ${project.baseDirectory} (package.json, artisan, Procfile…). Import them, or add one by hand.`
         : 'Add the commands you start for this project, like npm run dev or php artisan serve.',
       found
-        ? { label: `Import ${found} command${found === 1 ? '' : 's'}…`, action: () => withActive(project.id, () => window.api.openImportCommands()) }
-        : { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand()) },
-      found ? { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand()) } : null
+        ? { label: `Import ${found} command${found === 1 ? '' : 's'}…`, action: () => withActive(project.id, () => window.api.openImportCommands(project.id)) }
+        : { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand(project.id)) },
+      found ? { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand(project.id)) } : null
     );
     return;
   }
@@ -1545,16 +1558,8 @@ function currentStreamKey() {
   return streamKeyFor(selection.projectId, selection.id);
 }
 
-function isAtBottom() {
-  const term = $('Terminal');
-  return term.scrollHeight - term.scrollTop - term.clientHeight < 40;
-}
-
 function scrollToLatest() {
-  const term = $('Terminal');
-  term.scrollTop = term.scrollHeight;
-  unseenLines = 0;
-  $('JumpLatestBtn').hidden = true;
+  logA.scrollToLatest();
 }
 
 function placeholderText() {
@@ -1567,11 +1572,6 @@ function placeholderFor(cmd) {
   if (status === 'running' || status === 'starting') return 'Waiting for output…';
   if (status === 'waiting') return 'Waiting for its dependency to be ready…';
   return 'No output yet. Start the service to see its logs here.';
-}
-
-function showPlaceholder() {
-  $('TerminalLogs').innerHTML = `<div class="log-placeholder">${esc(placeholderText())}</div>`;
-  finder.reset();
 }
 
 function timeOf(ts) {
@@ -1588,95 +1588,28 @@ function lineElement(entry) {
   return div;
 }
 
-function appendLines(entries) {
-  const fresh = entries.filter(e => e.seq > renderedSeq);
-  if (!fresh.length) return;
-  renderedSeq = fresh[fresh.length - 1].seq;
-
-  const logs = $('TerminalLogs');
-  const term = $('Terminal');
-  const follow = isAtBottom();
-  logs.querySelector('.log-placeholder')?.remove();
-
-  const els = fresh.map(lineElement);
-  const frag = document.createDocumentFragment();
-  els.forEach(el => frag.appendChild(el));
-  logs.appendChild(frag);
-  finder.added(els);
-
-  // Cap the DOM; when reading older lines, keep the viewport anchored as the top is trimmed
-  let removedHeight = 0;
-  const removed = [];
-  while (logs.childElementCount > MAX_DOM_LINES) {
-    removedHeight += logs.firstElementChild.offsetHeight;
-    removed.push(logs.firstElementChild);
-    logs.firstElementChild.remove();
-  }
-  if (removed.length) finder.removed(removed);
-
-  if (follow) {
-    scrollToLatest();
-  } else {
-    term.scrollTop -= removedHeight;
-    unseenLines += fresh.length;
-    const btn = $('JumpLatestBtn');
-    btn.innerHTML = `${icons.arrowDown}<span>${unseenLines} new line${unseenLines === 1 ? '' : 's'}</span>`;
-    btn.hidden = false;
-  }
-
-  // A crash banner quotes the last error line, so refresh it when errors arrive
-  if (selection?.kind === 'cmd' && els.some(el => el.dataset.level === 'error')) {
-    const cmd = selectedCmd();
-    if (cmd && normalizeStatus(cmd.status) === 'crashed') renderServiceBanner(selectedProject(), cmd, 'crashed');
-  }
-}
-
 async function loadLogStream() {
-  const key = currentStreamKey();
-  if (key === renderedKey) return;
-  renderedKey = key;
-  renderedSeq = 0;
-  unseenLines = 0;
-  $('JumpLatestBtn').hidden = true;
-  showPlaceholder();
-
-  loadingQueue = [];
   const isShell = selection.kind === 'shell';
-  const snapshot = await window.api.getLogs(isShell ? appState.activeProject : selection.projectId, isShell ? null : selection.id);
-  if (renderedKey !== key) return; // selection changed while loading
-
-  const queued = loadingQueue;
-  loadingQueue = null;
-  appendLines([...snapshot.lines, ...queued]);
-  scrollToLatest();
+  const loaded = await logA.open(isShell ? appState.activeProject : selection.projectId, isShell ? null : selection.id);
+  if (!loaded) return; // already shown, or the selection changed while loading
   const cmd = selectedCmd();
   if (cmd) renderServiceBanner(selectedProject(), cmd, normalizeStatus(cmd.status));
 }
-
-$('Terminal').addEventListener('scroll', () => {
-  if (isAtBottom()) {
-    unseenLines = 0;
-    $('JumpLatestBtn').hidden = true;
-  }
-});
-
-$('JumpLatestBtn').addEventListener('click', scrollToLatest);
 
 $('ClearLogsBtn').addEventListener('click', () => {
   if (!selection) return;
   if (selection.kind === 'shell') window.api.clearLogs(appState.activeProject, null);
   else window.api.clearLogs(selection.projectId, selection.id);
-  showPlaceholder();
-  scrollToLatest();
+  logA.clear();
 });
 
-window.api.onTerminalLog((payload) => {
-  logB.push(payload);
-  const key = streamKeyFor(payload.projectId, payload.commandId);
-  if (key !== renderedKey) return;
-  if (loadingQueue) { loadingQueue.push(payload); return; }
-  appendLines([payload]);
-});
+// Log lines arrive in batches (one per ~50 ms) and are appended once per batch
+function handleLogBatch(batch) {
+  logA.pushMany(batch);
+  logB.pushMany(batch);
+}
+if (window.api.onTerminalLogBatch) window.api.onTerminalLogBatch(handleLogBatch);
+else window.api.onTerminalLog((payload) => handleLogBatch([payload]));
 
 // ── Selection & actions ──────────────────────────────────────────
 function select(next) {
