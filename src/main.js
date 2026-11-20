@@ -43,7 +43,6 @@ window.ui.initWindowControls();
 $('ShellAvatar').innerHTML = icons.terminal;
 $('BtnNewProject').innerHTML = icons.plus;
 $('BtnRootsMenu').innerHTML = icons.more;
-$('TriggerProjManager').innerHTML = `${icons.folder}<span>Manage projects</span>`;
 $('BtnStart').innerHTML = `${icons.play}<span>Start</span>`;
 $('BtnStartNow').innerHTML = `${icons.play}<span>Start now</span>`;
 $('BtnRestart').innerHTML = `${icons.restart}<span>Restart</span>`;
@@ -57,8 +56,7 @@ $('CopyLogsBtn').innerHTML = `${icons.copy}<span>Copy</span>`;
 
 $('WinBtnMin').addEventListener('click', () => window.api.minimize());
 $('WinBtnMax').addEventListener('click', () => window.api.maximize());
-$('TriggerProjManager').addEventListener('click', () => window.api.openProjectManager());
-$('BtnNewProject').addEventListener('click', () => window.api.newProjectCommand());
+$('BtnNewProject').addEventListener('click', () => newProject());
 $('BtnRootsMenu').addEventListener('click', () => openRootsMenu());
 
 const finder = window.logFind.create({
@@ -208,10 +206,151 @@ function countByStatus(commands) {
 const isLive = (status) => ['running', 'starting', 'waiting'].includes(normalizeStatus(status));
 const liveCount = (commands) => commands.filter(c => isLive(c.status)).length;
 
-// Tool windows (Add/Edit command, Import, Rename) work on the active project: point it first
-function withActive(projectId, fn) {
-  if (appState && appState.activeProject !== projectId) window.api.setActiveProject(projectId);
-  fn();
+// ── In-window surfaces (B-4, B-5): each is fixed to the project it was opened for (P5) ──
+let pendingSelect = null; // a command just added: select it once the refreshed state has it
+
+function selectWhenPresent(projectId, commandId) {
+  if (!commandId) return;
+  if (commandsOf(projectById(projectId)).some(c => c.id === commandId)) { selectService(projectId, commandId); render(); }
+  else pendingSelect = { projectId, commandId };
+}
+
+function addCommand(projectId) {
+  const project = projectById(projectId);
+  if (!project) return;
+  window.surfaces.commandDrawer({
+    project,
+    secretsEncrypted: appState?.secretsEncrypted,
+    onSaved: ({ commandId }) => selectWhenPresent(projectId, commandId),
+  });
+}
+
+function editCommand(projectId, commandId) {
+  const project = projectById(projectId);
+  const command = commandsOf(project).find(c => c.id === commandId);
+  if (!command) return;
+  window.surfaces.commandDrawer({ project, command, secretsEncrypted: appState?.secretsEncrypted, live: isLive(command.status) });
+}
+
+function importCommands(projectId) {
+  window.surfaces.importModal({ projectId });
+}
+
+function newProject() {
+  window.surfaces.newProjectModal({
+    onCreated: ({ projectId, name, folder }) => {
+      revealProjectId = projectId;
+      if (projectById(projectId)) render();
+      window.overlay.toast(`Created ${name}`, folder ? { action: { label: 'Import commands…', run: () => importCommands(projectId) }, timeout: 8000 } : {});
+    },
+  });
+}
+
+// Rename in place in the tree (F2 or ⋯ → Rename…). A project without a visible row gets a small modal.
+let renaming = null; // { projectId, sidebarStale } while the name field is open; tree renders wait for it
+
+function renameProject(p) {
+  const toggle = $('ProcessWrapperList').querySelector(`[data-focus-key="${CSS.escape(`p:${p.id}`)}"]`);
+  if (!toggle || window.layout.density() === 'rail') {
+    window.surfaces.renameModal({ project: p, onRenamed: (name) => window.overlay.toast(`Renamed to ${name}`) });
+    return;
+  }
+  if (renaming) return;
+  renaming = { projectId: p.id, sidebarStale: false };
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'input-field tree-rename';
+  input.value = p.name || '';
+  input.setAttribute('aria-label', `New name for ${p.name}`);
+  input.title = 'Enter to save, Esc to cancel';
+  toggle.hidden = true;
+  toggle.after(input);
+  input.focus();
+  input.select();
+
+  let settled = false;
+  const finish = () => {
+    settled = true;
+    const stale = renaming?.sidebarStale;
+    renaming = null;
+    input.remove();
+    toggle.hidden = false;
+    if (stale) renderSidebar();
+    $('ProcessWrapperList').querySelector(`[data-focus-key="${CSS.escape(`p:${p.id}`)}"]`)?.focus();
+  };
+  const commit = async () => {
+    if (settled) return;
+    const name = input.value.trim();
+    if (!name || name === p.name) { finish(); return; }
+    settled = true;
+    input.disabled = true;
+    const res = await window.api.renameProject(p.id, name);
+    if (!res || res.ok === false) {
+      // Keep the field open with what was typed; the reason shows as a toast
+      settled = false;
+      input.disabled = false;
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      window.overlay.toast(res?.error || 'The name could not be saved.', { tone: 'error' });
+      return;
+    }
+    // Show the new name right away, also in a redraw that waited for the field; the refreshed state
+    // from the engine replaces this moments later
+    const saved = projectById(p.id);
+    if (saved) saved.name = name;
+    const label = toggle.querySelector('.tree-name');
+    if (label) label.textContent = name;
+    finish();
+  };
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { e.preventDefault(); finish(); }
+  });
+  input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
+  input.addEventListener('blur', () => { if (!settled && !input.disabled) commit(); });
+}
+
+// B-6: Project manager's Delete project, Duplicate and Remove command, now in the tree and service menus
+async function deleteProject(p) {
+  const count = commandsOf(p).length;
+  const live = liveCount(commandsOf(p));
+  const choice = await confirmDialog({
+    title: `Delete "${p.name}"?`,
+    body: `This removes the project and its ${count} command${count === 1 ? '' : 's'} from StackConsole.${live ? ` ${live} running service${live === 1 ? ' is' : 's are'} stopped first.` : ''} Files on disk are not touched.`,
+    actions: [
+      { label: 'Cancel', value: null, variant: 'secondary', autofocus: true },
+      { label: 'Delete project', value: 'delete', variant: 'danger-solid' },
+    ],
+  });
+  if (choice !== 'delete') return;
+  const res = await window.api.deleteProject(p.id);
+  if (res && res.ok === false) await notify('Couldn\'t delete the project', res.error || 'Try again.');
+  else window.overlay.toast(`Deleted ${p.name}`);
+}
+
+async function duplicateCommand(projectId, cmd) {
+  // The engine copies the stored command, secrets included (P7)
+  const res = await window.api.duplicateCommand(projectId, cmd.id);
+  if (res && res.ok === false) { await notify('Couldn\'t duplicate', res.error || 'Try again.'); return; }
+  window.overlay.toast(`Duplicated ${cmd.displayName}`);
+  selectWhenPresent(projectId, res?.commandId);
+}
+
+async function removeCommand(projectId, cmd) {
+  const running = isLive(cmd.status);
+  const choice = await confirmDialog({
+    title: `Remove "${cmd.displayName}"?`,
+    body: running ? 'It is running and will be stopped, then removed from this project.' : 'The command is removed from this project.',
+    actions: [
+      { label: 'Cancel', value: null, variant: 'secondary', autofocus: true },
+      { label: running ? 'Stop and remove' : 'Remove', value: 'remove', variant: 'danger-solid' },
+    ],
+  });
+  if (choice !== 'remove') return;
+  const res = await window.api.removeCommand(projectId, cmd.id);
+  if (res && res.ok === false) await notify('Couldn\'t remove the command', res.error || 'Try again.');
+  else window.overlay.toast(`Removed ${cmd.displayName}`);
 }
 
 // Keep the selection valid: prefer the active project's first service, then any project's.
@@ -403,8 +542,8 @@ function projectNode(p, folder) {
     note.className = 'tree-note';
     note.innerHTML = '<span>No services yet.</span><span class="inline-row"></span>';
     const row = note.querySelector('.inline-row');
-    row.appendChild(smallButton('Add command', () => withActive(p.id, () => window.api.openAddCommand(p.id))));
-    const imp = smallButton('Import…', () => withActive(p.id, () => window.api.openImportCommands(p.id)));
+    row.appendChild(smallButton('Add command', () => addCommand(p.id)));
+    const imp = smallButton('Import…', () => importCommands(p.id));
     imp.disabled = !p.baseDirectory || !!p.folderMissing;
     if (imp.disabled) imp.title = p.baseDirectory ? 'Folder missing' : 'Choose the project folder first (⋯ → Choose folder…)';
     row.appendChild(imp);
@@ -805,6 +944,7 @@ $('SidebarRail').addEventListener('keydown', (e) => {
 });
 
 function renderSidebar() {
+  if (renaming) { renaming.sidebarStale = true; return; }
   if (window.layout.density() === 'rail') { renderRail(); return; }
   renderHeading();
   renderStrip();
@@ -1078,7 +1218,7 @@ async function setUp(folder, mode) {
   revealProjectId = res.projectIds[0];
   if (projectById(revealProjectId)) render();
   // Commands found but none pre-ticked (composer-only): choose them instead of guessing
-  if (res.needsReview) window.api.openImportCommands(res.projectIds[0]);
+  if (res.needsReview) importCommands(res.projectIds[0]);
 }
 
 function revealNewProject() {
@@ -1174,10 +1314,6 @@ async function combineProject(p) {
   if (res && !res.ok) await notify('Couldn\'t combine', res.error);
 }
 
-function editCommand(projectId, commandId) {
-  withActive(projectId, () => window.api.openEditCommand({ projectId, commandId }));
-}
-
 function openProjectMenu(p, anchor) {
   const cmds = commandsOf(p);
   const live = liveCount(cmds);
@@ -1192,11 +1328,11 @@ function openProjectMenu(p, anchor) {
     { label: 'Open in VS Code', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => folderAction(p.id, null, 'vscode') },
     { label: 'Terminal here', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => folderAction(p.id, null, 'terminal') },
     'separator',
-    { label: 'Add command…', action: () => withActive(p.id, () => window.api.openAddCommand(p.id)) },
-    { label: 'Import from folder…', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => withActive(p.id, () => window.api.openImportCommands(p.id)) },
+    { label: 'Add command…', action: () => addCommand(p.id) },
+    { label: 'Import from folder…', disabled: !hasFolder, title: hasFolder ? '' : noFolder, action: () => importCommands(p.id) },
     ...(p.folderMissing && p.relinkTo ? [{ label: `Relink to ${baseName(p.relinkTo)}`, title: p.relinkTo, action: () => relinkProject(p) }] : []),
     { label: p.baseDirectory ? 'Change folder…' : 'Choose folder…', action: () => chooseFolder(p) },
-    { label: 'Rename…', action: () => withActive(p.id, () => window.api.editProjectName(p.id)) },
+    { label: 'Rename…', hint: 'F2', action: () => renameProject(p) },
     { label: 'Colour & icon…', hint: window.identity.describe(p), action: () => editIdentity(p, anchor) },
     { label: p.pinned ? 'Unpin' : 'Pin to top', action: () => pinProject(p, !p.pinned) },
     'separator',
@@ -1207,6 +1343,7 @@ function openProjectMenu(p, anchor) {
     { label: 'Combine with…', disabled: !hasFolder, title: hasFolder ? 'Make one project out of this and others in the same folder' : noFolder, action: () => combineProject(p) },
     'separator',
     { label: 'Archive project', disabled: live > 0, title: live ? 'Stop its services first' : 'Hide it under Archived', action: () => archiveProject(p, true) },
+    { label: 'Delete project…', danger: true, title: 'Remove it from StackConsole; files stay on disk', action: () => deleteProject(p) },
   ], `Actions for ${p.name}`);
 }
 
@@ -1255,6 +1392,8 @@ $('BtnServiceMore').addEventListener('click', () => {
     'separator',
     { label: 'Edit command…', action: () => editCommand(p.id, cmd.id) },
     { label: 'Copy command', action: () => copyText(cmd.command || '') },
+    { label: 'Duplicate command', action: () => duplicateCommand(p.id, cmd) },
+    { label: 'Remove command…', danger: true, action: () => removeCommand(p.id, cmd) },
     'separator',
     besideCmd()
       ? { label: 'Close the second log', action: closeBeside }
@@ -1301,7 +1440,7 @@ function renderMain() {
     showEmptyState(
       'No projects yet',
       'Create a project, then add the commands you run every day: dev servers, queue workers, tunnels.',
-      { label: 'Create project', action: () => window.api.newProjectCommand() }
+      { label: 'Create project', action: () => newProject() }
     );
     return;
   }
@@ -1311,7 +1450,7 @@ function renderMain() {
       showEmptyState(
         'All projects are archived',
         'Unarchive one from the bottom of the sidebar, or create a new project.',
-        { label: 'Create project', action: () => window.api.newProjectCommand() }
+        { label: 'Create project', action: () => newProject() }
       );
       return;
     }
@@ -1323,9 +1462,9 @@ function renderMain() {
         ? `Found ${found} command${found === 1 ? '' : 's'} in ${project.baseDirectory} (package.json, artisan, Procfile…). Import them, or add one by hand.`
         : 'Add the commands you start for this project, like npm run dev or php artisan serve.',
       found
-        ? { label: `Import ${found} command${found === 1 ? '' : 's'}…`, action: () => withActive(project.id, () => window.api.openImportCommands(project.id)) }
-        : { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand(project.id)) },
-      found ? { label: 'Add command', action: () => withActive(project.id, () => window.api.openAddCommand(project.id)) } : null
+        ? { label: `Import ${found} command${found === 1 ? '' : 's'}…`, action: () => importCommands(project.id) }
+        : { label: 'Add command', action: () => addCommand(project.id) },
+      found ? { label: 'Add command', action: () => addCommand(project.id) } : null
     );
     return;
   }
@@ -1839,6 +1978,11 @@ $('TriggerStopAll').addEventListener('click', async () => {
 // Tree keyboard: ↑/↓ move between rows (a service is selected as you land on it, a repo's Set up is
 // only focused), → expands and ← collapses a row, ← on a closed row or a service goes to its parent.
 $('ProcessWrapperList').addEventListener('keydown', (e) => {
+  if (e.key === 'F2') {
+    const key = document.activeElement?.dataset?.focusKey || '';
+    const p = key.startsWith('p:') ? projectById(key.slice(2)) : null;
+    if (p) { e.preventDefault(); renameProject(p); return; }
+  }
   if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
   const tree = $('ProcessWrapperList');
   const rows = [...tree.querySelectorAll('.tree-toggle, .svc-row, .repo-setup')];
@@ -1917,6 +2061,11 @@ window.api.onDataUpdate((updatedData) => {
   if (!commandsOf(updatedData.projects?.find(p => p.id === updatedData.activeProject)).length) importProbe = { projectId: null, count: 0 };
   appState = updatedData;
   if (pendingAction) { clearTimeout(pendingAction); pendingAction = null; }
+  if (pendingSelect && commandsOf(projectById(pendingSelect.projectId)).some(c => c.id === pendingSelect.commandId)) {
+    const { projectId, commandId } = pendingSelect;
+    pendingSelect = null;
+    selectService(projectId, commandId);
+  }
   render();
 });
 

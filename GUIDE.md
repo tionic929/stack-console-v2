@@ -20,15 +20,16 @@ stackconsolev2/
 ├── src-tauri/                       # Tauri 2 desktop app (binary `stackconsole`)
 │   ├── src/main.rs                  # Windows, tray, notifications, dialogs, quit path, the `api` command
 │   ├── src/secrets.rs               # Secret values sealed with a key in the OS credential store
+│   ├── selftest/b4-b6.js            # In-app self-test for the in-window surfaces (run command in its header)
 │   ├── tauri.conf.json, capabilities/, icons/
 ├── src/                             # The interface (plain HTML/CSS/JS), shared by both apps
 │   ├── tauri-api.js                 # window.api for Tauri (injected into every window; idle under Electron)
 │   ├── index.html, index.css, main.js
 │   ├── tokens.css                   # Raw values + semantic layer (surfaces, text, status, elevation) + motion tokens
 │   ├── components/
-│   │   ├── modals/                  # add-command, add-project, edit-command, edit-project-name, import-commands (opened with ?projectId=&commandId=)
-│   │   └── project-manager.html/.js
-│   ├── util/                        # ansi-parser, command-form, icon-map, identity, layout, log-find, log-view (both logs),
+│   │   ├── modals/                  # Old tool windows (add/edit command, new project, rename, import); the main window no longer opens them
+│   │   └── project-manager.html/.js # Old Project manager window; retired from the main window (B-6)
+│   ├── util/                        # ansi-parser, command-form, icon-map, identity, layout, log-find, log-view (both logs), surfaces (command drawer, New project / Import / Rename modals),
 │   │                                # overlay (modal, drawer, popover, toast, tooltip), ui
 │   └── assets/logo/                 # stacklogo.ico (32x32), stacklogo-x256.ico
 ├── docs/

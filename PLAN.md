@@ -1,6 +1,6 @@
 # StackConsole v2: plan record
 
-Everything done and decided on the StackConsole rework, from the first look at the project to now. Last updated 2026-11-17 (Phase C: engine and Tauri app running on macOS).
+Everything done and decided on the StackConsole rework, from the first look at the project to now. Last updated 2026-11-20 (Phase B finished: B-4 to B-6 in the main window).
 
 This is the overview. The detail lives in two companion files:
 
@@ -18,7 +18,7 @@ Today it is an Electron app with a plain HTML/CSS/JS interface, a Python helper 
 
 ## 2. Timeline
 
-All on 2026-11-17.
+Steps 1-9 on 2026-11-17, step 10 on 2026-11-20.
 
 | Step | What happened | Result |
 |---|---|---|
@@ -31,6 +31,7 @@ All on 2026-11-17.
 | 7 | **Phase C started**: Rust installed, engine crate `engine/` built with tests, engine API drafted. | `engine/`, `docs/ENGINE-API.md`, checklist below |
 | 8 | **Engine API approved**; all handlers ported; file/git watching; Tauri app (`src-tauri/`) running the current interface through `src/tauri-api.js`. Checked on macOS with 78 engine tests and an in-app self-test (15/15). | `engine/`, `src-tauri/`, `src/tauri-api.js`, section 10 |
 | 9 | **Phase B**: B-2 (specific requests; P5-P7 fixed), B-8 (one log view), B-7 (semantic and motion tokens), B-3 (overlay primitives). Stopped after B-3; B-4 to B-6 reverted. First commit of the rework. | `src/`, `engine/src/engine/handlers.rs`, checklist |
+| 10 | **2026-11-20, Phase B finished**: B-4 (command drawer), B-5 (New project, Import and Rename in the window, inline rename with F2), B-6 (Project manager button removed, its actions in the tree and service menus). App self-test 15/15 in seven runs. | `src/util/surfaces.js`, `src/main.js`, `src-tauri/selftest/b4-b6.js` |
 
 Steps 1-6 changed no application code. Step 7 changed `services/stream_worker.py` (P1/P2 reference fix) and added the Rust workspace (`Cargo.toml`, `engine/`) and `docs/ENGINE-API.md`; the Electron files stay until the Tauri app reaches parity.
 
@@ -115,7 +116,7 @@ Phases B and D can overlap with C, because the interface work is done in plain H
 
 Updated 2026-11-17, after the Tauri app first ran on macOS.
 
-1. **Phase B, continuing.** B-2 (P5-P7 fixed) and B-8 (one log view) are done. B-7 (tokens) and B-3 (overlay primitives) done; **stopped after B-3 at the owner's request (2026-11-17)**. B-4 to B-6 had been started past that point and were reverted. Next in Phase B: B-4 (command drawer), B-5 (New project / Import modals, inline rename), B-6 (retire Project manager), all on top of `window.overlay`.
+1. **Phase B is done** (2026-11-20). Left over from it: delete the now-unused tool window pages (`src/components/modals/`, `src/components/project-manager.*`) together with their opening code in `src-tauri/src/main.rs`, `src/tauri-api.js` and the Electron main process, once the Electron app is retired or switched to the same surfaces. The drawer covers the log; making the log pane resize beside it, and the inspector tabs, belong to Phase D (D-2 and the inspector).
 2. **Answer open questions 2-5** (section 5). Question 4 (Windows only, or macOS/Linux too) decides how much goes into Windows CI versus macOS polish.
 3. **Windows**: a CI job on Windows running `cargo test -p stackconsole-engine` and building the app. This replaces A-9 and closes C-W1, which can't be done from the Mac.
 4. **Click-through (C-16)** of what the self-test can't reach: folder pickers, tray, notifications, the other tool windows, window controls. Needs screen access or a person.
@@ -130,7 +131,7 @@ For the Rust engine (Phase C), `[x]` on a P/F/D/X item means **verified by the e
 
 Work happens on the branch `rework/phase-a` (nothing committed yet).
 
-Engine progress (2026-11-17): crate `engine/` (`stackconsole-engine`, no Tauri dependency) with 79 tests (50 unit, 19 supervisor with real processes, 10 handler), all passing on macOS; the engine type-checks for Windows (`cargo check --target x86_64-pc-windows-msvc`), not run there. Desktop app `src-tauri/` (binary `stackconsole`): debug and release builds on macOS (release binary 16 MB, no Python), 1 unit test, in-app self-tests 15/15 (Phase C), 9/9 (Phase B tool windows with their URL targets), 7/7 (logs) and 9/9 (overlay primitives); clippy clean across the workspace. API draft: [docs/ENGINE-API.md](docs/ENGINE-API.md). Manual run: `cargo run -p stackconsole-engine --example run -- "<command>" [seconds] [folder]`.
+Engine progress (2026-11-17): crate `engine/` (`stackconsole-engine`, no Tauri dependency) with 79 tests (50 unit, 19 supervisor with real processes, 10 handler), all passing on macOS; the engine type-checks for Windows (`cargo check --target x86_64-pc-windows-msvc`), not run there. Desktop app `src-tauri/` (binary `stackconsole`): debug and release builds on macOS (release binary 16 MB, no Python), 1 unit test, in-app self-tests 15/15 (Phase C), 9/9 (Phase B tool windows with their URL targets), 7/7 (logs), 9/9 (overlay primitives) and, on 2026-11-20, 15/15 for B-4 to B-6 (`src-tauri/selftest/b4-b6.js`, the only one kept in the repo); clippy clean across the workspace. API draft: [docs/ENGINE-API.md](docs/ENGINE-API.md). Manual run: `cargo run -p stackconsole-engine --example run -- "<command>" [seconds] [folder]`.
 
 **Tauri app status (2026-11-17):** runs on macOS with the current interface and passes the in-app self-test; Windows build, installer and the clicks that need a screen are what is left before parity (C-W1, C-9, items marked `[~]`).
 
@@ -190,10 +191,10 @@ Quick UI wins
 ### Phase B: draw the boundary (current app)
 - [x] B-1 Engine API written down (requests and events): `docs/ENGINE-API.md`, approved by the owner 2026-11-17 together with the recommendations in its section 5 (terminal for services, secrets entered again once, login-shell PATH, 3 s stop grace)
 - [x] B-2 Interface sends specific requests naming their project (closes P5, P6, P7; D1 and D2 for config changes): `addProject`, `renameProject`, `deleteProject`, `addCommand`, `updateCommand`, `removeCommand`, `duplicateCommand`, plus import with an explicit project. Tool windows open with `?projectId=&commandId=`; Edit never falls back to "the first command". Engine test + app self-test 9/9 (Add/Edit/Rename windows driven for real). The same handlers were added to Electron's `main.js`/`preload.js` so the shared interface keeps working there; that Electron code is unverified (not runnable here)
-- [x] B-3 Overlay primitives (`src/util/overlay.js`, styles at the end of `src/index.css`, loaded in the main window): modal, drawer, popover, toast, tooltip, with the design plan's states (dirty: closing asks first and backdrop click does nothing; saving: primary button busy, inputs locked; error: message stays in the surface; focus trapped in modals and returned to the trigger; Esc; reduced motion). Transitions start without animation frames, so they work in a hidden window too. App self-test `b3`: 9/9 in three runs. Not used by any screen yet (that is B-4 to B-6)
-- [ ] B-4 Add / Edit command moved into the inspector drawer. (Built past the agreed stop on 2026-11-17, then reverted at the owner's request; the B-3 primitives it needs are in place.)
-- [ ] B-5 New project, Rename, Import moved in-window; six OS windows removed (D3). (Built and reverted, as B-4.)
-- [ ] B-6 Project manager window retired. Its Delete project, Duplicate and Remove command need a new home first (tree and service menus). (Built and reverted, as B-4.)
+- [x] B-3 Overlay primitives (`src/util/overlay.js`, styles at the end of `src/index.css`, loaded in the main window): modal, drawer, popover, toast, tooltip, with the design plan's states (dirty: closing asks first and backdrop click does nothing; saving: primary button busy, inputs locked; error: message stays in the surface; focus trapped in modals and returned to the trigger; Esc; reduced motion). Transitions start without animation frames, so they work in a hidden window too. App self-test `b3`: 9/9 in three runs. Used by B-4 and B-5
+- [x] B-4 Add / Edit command in a drawer on the right of the main window (`window.surfaces.commandDrawer` in `src/util/surfaces.js`, using `util/command-form.js`). Fixed to the project and command it was opened for; a running command also gets "Save and restart"; a new command is selected once saved. States from B-3: dirty asks before closing, a second drawer asks the first, a failed save keeps the message and the input. The drawer lies over the log (it does not resize the log pane yet) and the form is one page, not the design plan's tabs; both are Phase D. Built once on 2026-11-17 and reverted; rebuilt 2026-11-20
+- [x] B-5 New project and Import commands as modals, Rename inline in the tree (F2 on a project row, or ⋯ → Rename…; Enter saves, Esc cancels, a failed save keeps the field open). A project with no visible row (collapsed section, rail) gets a small Rename modal. Tree redraws wait while the name field is open. The main window no longer opens any of the six OS windows; their pages and opening code are still in the repo (section 8, step 1)
+- [x] B-6 Project manager's button removed from the sidebar. Delete project… moved to the project ⋯ menu, Duplicate command and Remove command… to the service ⋯ menu; Add, Import, Rename, Archive, folder and Start were already in the tree. App self-test `src-tauri/selftest/b4-b6.js`: 15/15 in seven runs (New project, Import, Add from the menu, dirty Esc, P5 with a project switch while open, Edit, failed save, Save and restart, inline rename through a refresh, Rename modal, Duplicate, Remove, Delete project, second drawer, focus trap)
 - [x] B-7 Semantic colour tokens and motion tokens (`src/tokens.css`): `--surface-0..3`, `--text*`, `--border*`, `--accent*`, `--status-*`, `--elevation-1..3`, `--dur-fast/base/slow`, `--ease-standard/enter/exit`, as aliases of today's values; `index.css` moved onto them (about 230 uses; 18 raw-scale uses left where no semantic name fits yet). Checked in the app: computed styles of all 264 elements of the main window identical before and after. Only intended difference: the sidebar's open/close animation is 180 ms (was 160 ms). Themes (D-4) remap this layer
 - [x] B-8 One log view class for both logs (D6): the main log now uses `util/log-view.js` like the log beside it, with hooks for the find bar and the crash banner; the old main-log code in `src/main.js` is gone. App self-test 7/7 (both logs, no mixing, levels, Clear, close beside) plus the earlier 15/15 and 9/9 still pass. Unblocks S-015 / S-016 (second log work)
 
@@ -241,11 +242,11 @@ Quick UI wins
 
 ## 10. Handover: how to pick this up
 
-Updated 2026-11-17 at the end of the session. Branch `rework/phase-a`, committed and pushed (one commit on top of `4e1707f`).
+Updated 2026-11-20. Branch `rework/phase-a`, committed and pushed (two commits on top of `4e1707f`: the rework and B-4 to B-6).
 
 **Where things stand**
 - Phase C (Rust engine under Tauri): the engine and the desktop app run on macOS with the current interface; all 57 handlers ported. Left: Windows (C-W1), click-through of tray / pickers / notifications (C-16), keychain check (C-10), installer and updater (C-9, out of scope so far). See the checklist.
-- Phase B: B-1, B-2, B-3, B-7, B-8 done. Next: B-4, B-5, B-6.
+- Phase B: all done (B-1 to B-8). Leftover cleanup: the unused tool window pages (section 8, step 1).
 - Phases A (re-scope), D (needs an art direction) and E: not started. Open questions in section 5.
 - The Electron app is still in the repo. It got the same B-2 handlers (`main.js`, `preload.js`) so the shared interface keeps working there, but none of the Electron code was run on this machine.
 
@@ -268,10 +269,11 @@ The interface in `src/` is embedded into the app at build time: rebuild after ch
 **How it was verified**
 - Engine: `engine/tests/supervisor.rs` (real processes: lines, stop, process groups, crash policy, start order, masking, batching, shutdown), `engine/tests/handlers.rs` (every window request, watching, the B-2 specific requests), unit tests per module.
 - Parity with the old JS: `identity.rs` and `importer.rs` compare against outputs produced by `main/identity.js` and `main/importer.js` (`engine/tests/fixtures/import-tree.expected.json`; regenerate with Node if the fixture changes).
-- App: debug builds accept `STACKCONSOLE_SELFTEST=<file.js>`, which runs that script in the real main window once it loads; scripts report through the `selftest_report` command (printed as `[selftest] ...`, `done: true` quits the app) and can run code in another window with `selftest_eval(label, script)`. The scripts used on 2026-11-17 lived in the session scratchpad, not the repo: Phase C (15 checks, listed under C-1), Phase B tool windows (9), logs (7), overlay primitives (9), and a computed-style comparison for B-7. Rewrite them from the checklist entries if needed. Screen access to the app was declined, so nothing visual was looked at.
+- App: debug builds accept `STACKCONSOLE_SELFTEST=<file.js>`, which runs that script in the real main window once it loads; scripts report through the `selftest_report` command (printed as `[selftest] ...`, `done: true` quits the app) and can run code in another window with `selftest_eval(label, script)`. `src-tauri/selftest/b4-b6.js` (B-4 to B-6, 15 checks) is in the repo; its header has the run command. The 2026-11-17 scripts lived in the session scratchpad and are gone: Phase C (15 checks, listed under C-1), Phase B tool windows (9), logs (7), overlay primitives (9), and a computed-style comparison for B-7. Rewrite them from the checklist entries if needed.
+- Known flaky test: `ports::tests::detects_listener` failed once in about ten workspace runs on 2026-11-20 (a port freed by the test can be taken by another test running at the same time). Not fixed. Screen access to the app was declined, so nothing visual was looked at.
 
 **Known gaps** (all in the checklist): Windows not run (C-W1; the app can't be cross-checked from macOS without `llvm-rc`), click-through (C-16), keychain secret store not exercised (C-10), P11 window reload, X11 permission prompts, installer/updater (C-9).
 
-**Picking up B-4 to B-6**: use `window.overlay.drawer` / `modal` (see `src/util/overlay.js` for the states) and `window.commandForm.mount` (needs `util/command-form.js` loaded in `index.html`; its field ids must be unique in the page). A closing surface stays in the page for its exit animation; `overlay.js` already strips its ids so a new surface can reuse them. Delete, Duplicate and Remove need a place in the tree menus before Project manager can go.
+**In-window surfaces** (B-4, B-5): `src/util/surfaces.js` builds them on `window.overlay`; `src/main.js` calls them through `addCommand`, `editCommand`, `importCommands`, `newProject` and `renameProject`. The command form looks its fields up by id, so it mounts after the drawer is in the page, and its ids must stay unique in the main window. A closing surface stays in the page for its exit animation; `overlay.js` strips its ids so a new surface can reuse them.
 
 **Rules the owner set**: update the checklist in section 9 with every change, using its legend; commit or push only when asked; no Claude or tool attribution lines in commits or PRs; the visual redesign and new features are separate from the port.
